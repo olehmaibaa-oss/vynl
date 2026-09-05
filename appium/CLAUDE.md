@@ -49,22 +49,37 @@ The iOS Simulator must be booted. First WDA build is slow; subsequent runs are f
 ```
 appium/
 ├── pom.xml
-└── src/test/
-    ├── java/vynl/
-    │   ├── Hooks.java              @Before/@After — driver lifecycle
-    │   ├── Config.java             config.properties + -D overrides
-    │   ├── DriverManager.java      ThreadLocal driver holder
-    │   ├── AddReleaseSteps.java    step definitions (no locators — page objects only)
-    │   ├── RunCucumberTest.java    JUnit suite entry point
+└── src/
+    ├── main/java/vynl/            ← the framework (no test deps)
+    │   ├── config/Config.java      config.properties + -D overrides
+    │   ├── driver/DriverManager.java  ThreadLocal driver holder
     │   └── pages/
     │       ├── BasePage.java       explicit waits + find/tap/type by accessibility id
     │       ├── CollectionPage.java collection screen
     │       └── AddReleasePage.java add-release form
-    └── resources/
-        ├── config.properties       capabilities, timeouts
-        └── features/
-            └── add_release.feature Gherkin scenarios
+    └── test/
+        ├── java/vynl/             ← the tests
+        │   ├── RunCucumberTest.java   JUnit suite entry point
+        │   ├── hooks/Hooks.java       @Before/@After — driver lifecycle
+        │   └── steps/AddReleaseSteps.java  step definitions (page objects only)
+        └── resources/
+            ├── config.properties   capabilities, timeouts
+            └── features/
+                └── add_release.feature  Gherkin scenarios
 ```
+
+**The main/test split is deliberate.** `src/main` is framework code and must stay free of
+Cucumber and JUnit; `java-client` is `compile` scope, cucumber and junit are `test` scope,
+so the compiler enforces it. Guard: `grep -rE "io\.cucumber|org\.junit" src/main` must
+print nothing.
+
+`config.properties` stays in `src/test/resources` on purpose. `Config` lives in main but
+reads it off the classpath, and test resources are on the classpath at run time. Those are
+environment values, not framework code.
+
+`RunCucumberTest` names its glue packages explicitly (`vynl.hooks,vynl.steps`). Scanning is
+recursive so plain `vynl` would work too, but a silent glue miss shows up as "0 scenarios"
+and is miserable to debug.
 
 Page objects take the driver through the constructor and get it from `DriverManager`
 (ThreadLocal), not from a public static field — so parallel execution later doesn't

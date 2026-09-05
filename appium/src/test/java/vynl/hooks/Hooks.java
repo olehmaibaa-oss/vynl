@@ -1,9 +1,11 @@
-package vynl;
+package vynl.hooks;
 
 import io.appium.java_client.ios.IOSDriver;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import vynl.config.Config;
+import vynl.driver.DriverManager;
 
 import java.util.List;
 import java.util.Map;

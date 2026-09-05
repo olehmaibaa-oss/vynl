@@ -1,4 +1,4 @@
-package vynl;
+package vynl.driver;
 
 import io.appium.java_client.ios.IOSDriver;
 

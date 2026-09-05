@@ -1,8 +1,9 @@
-package vynl;
+package vynl.steps;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import vynl.driver.DriverManager;
 import vynl.pages.CollectionPage;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;

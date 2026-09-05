@@ -3,7 +3,7 @@ package vynl.pages;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.ios.IOSDriver;
 import org.openqa.selenium.By;
-import vynl.Config;
+import vynl.config.Config;
 
 /** The collection screen — list of releases, empty state, add entry points. */
 public class CollectionPage extends BasePage {
