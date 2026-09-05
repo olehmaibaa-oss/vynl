@@ -52,15 +52,27 @@ appium/
 └── src/test/
     ├── java/vynl/
     │   ├── Hooks.java              @Before/@After — driver lifecycle + capabilities
-    │   ├── AddReleaseSteps.java    step definitions
-    │   └── RunCucumberTest.java    JUnit suite entry point
+    │   ├── DriverManager.java      ThreadLocal driver holder
+    │   ├── AddReleaseSteps.java    step definitions (no locators — page objects only)
+    │   ├── RunCucumberTest.java    JUnit suite entry point
+    │   └── pages/
+    │       ├── BasePage.java       driver + find/tap/type/isEnabled by accessibility id
+    │       ├── CollectionPage.java collection screen
+    │       └── AddReleasePage.java add-release form
     └── resources/features/
         └── add_release.feature     Gherkin scenarios
 ```
 
-**This is a minimal skeleton, not a mature framework.** Known gaps, to be addressed
-incrementally (see "Roadmap"): locators live inline in step definitions, no page objects,
-no explicit waits, no retry logic, no reporting.
+Page objects take the driver through the constructor and get it from `DriverManager`
+(ThreadLocal), not from a public static field — so parallel execution later doesn't
+require touching every page object. Steps instantiate page objects lazily inside each
+step rather than as fields, so they never depend on glue-instantiation order vs `@Before`.
+
+`ReleaseDetailPage` and `TrackFormPage` don't exist yet — there are no scenarios for
+them, and empty page objects rot.
+
+**Still a young framework.** Remaining gaps (see "Roadmap"): no explicit waits (a blanket
+10s implicit wait in Hooks), no retry logic, no reporting, capabilities hardcoded.
 
 ---
 
@@ -151,8 +163,8 @@ Tapping a track row opens it for editing, pre-filled. Swipe-to-delete removes a 
 
 In rough order. Each step is a deliberate move from "scripts that call Appium" toward a real framework.
 
-1. **Page objects** — move locators and screen actions out of step definitions into
-   `CollectionPage`, `AddReleasePage`, `ReleaseDetailPage`, `TrackFormPage`.
+1. ~~**Page objects**~~ — DONE for `CollectionPage` / `AddReleasePage` (+ `BasePage`,
+   `DriverManager`). `ReleaseDetailPage` / `TrackFormPage` come with their scenarios.
 2. **Explicit waits** — replace the blanket implicit wait with targeted `WebDriverWait` conditions;
    add a small wait helper.
 3. **Helpers/utilities** — gesture wrappers (swipe via `mobile: swipe`), screenshots, common flows.

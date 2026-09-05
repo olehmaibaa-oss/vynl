@@ -10,8 +10,6 @@ import java.time.Duration;
 
 public class Hooks {
 
-    public static IOSDriver driver;
-
     @Before
     public void setUp() throws Exception {
         DesiredCapabilities caps = new DesiredCapabilities();
@@ -28,15 +26,13 @@ public class Hooks {
         caps.setCapability("appium:processArguments",
                 java.util.Map.of("args", java.util.List.of("-uitesting")));
 
-
-        driver = new IOSDriver(new URL("http://127.0.0.1:4723"), caps);
+        IOSDriver driver = new IOSDriver(new URL("http://127.0.0.1:4723"), caps);
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        DriverManager.set(driver);
     }
 
     @After
     public void tearDown() {
-        if (driver != null) {
-            driver.quit();
-        }
+        DriverManager.quit();
     }
 }
