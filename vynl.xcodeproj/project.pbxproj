@@ -6,16 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		B4718DDF2FF15CD90050E7A0 /* Release.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4718DDE2FF15CD90050E7A0 /* Release.swift */; };
-		B4718DE12FF15CDB0050E7A0 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4718DE02FF15CDB0050E7A0 /* Track.swift */; };
-		B4718DE32FF15F830050E7A0 /* ReleaseRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4718DE22FF15F830050E7A0 /* ReleaseRowView.swift */; };
-		B4718DE52FF15F850050E7A0 /* ReleaseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4718DE42FF15F850050E7A0 /* ReleaseDetailView.swift */; };
-		B4718DE72FF15F890050E7A0 /* CollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4718DE62FF15F890050E7A0 /* CollectionView.swift */; };
-		B4718DE92FF162150050E7A0 /* AddReleaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4718DE82FF162150050E7A0 /* AddReleaseView.swift */; };
-		B4718DEB2FF164FA0050E7A0 /* TrackFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4718DEA2FF164FA0050E7A0 /* TrackFormView.swift */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		B4F6CC772FF1313100BAF31B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -34,13 +24,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		B4718DDE2FF15CD90050E7A0 /* Release.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Release.swift; sourceTree = "<group>"; };
-		B4718DE02FF15CDB0050E7A0 /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
-		B4718DE22FF15F830050E7A0 /* ReleaseRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseRowView.swift; sourceTree = "<group>"; };
-		B4718DE42FF15F850050E7A0 /* ReleaseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseDetailView.swift; sourceTree = "<group>"; };
-		B4718DE62FF15F890050E7A0 /* CollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionView.swift; sourceTree = "<group>"; };
-		B4718DE82FF162150050E7A0 /* AddReleaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddReleaseView.swift; sourceTree = "<group>"; };
-		B4718DEA2FF164FA0050E7A0 /* TrackFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackFormView.swift; sourceTree = "<group>"; };
 		B4F6CC672FF1312F00BAF31B /* vynl.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = vynl.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4F6CC762FF1313100BAF31B /* vynlTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = vynlTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4F6CC802FF1313100BAF31B /* vynlUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = vynlUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,13 +79,6 @@
 				B4F6CC792FF1313100BAF31B /* vynlTests */,
 				B4F6CC832FF1313100BAF31B /* vynlUITests */,
 				B4F6CC682FF1312F00BAF31B /* Products */,
-				B4718DDE2FF15CD90050E7A0 /* Release.swift */,
-				B4718DE02FF15CDB0050E7A0 /* Track.swift */,
-				B4718DE22FF15F830050E7A0 /* ReleaseRowView.swift */,
-				B4718DE42FF15F850050E7A0 /* ReleaseDetailView.swift */,
-				B4718DE62FF15F890050E7A0 /* CollectionView.swift */,
-				B4718DE82FF162150050E7A0 /* AddReleaseView.swift */,
-				B4718DEA2FF164FA0050E7A0 /* TrackFormView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -260,13 +236,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B4718DE32FF15F830050E7A0 /* ReleaseRowView.swift in Sources */,
-				B4718DE52FF15F850050E7A0 /* ReleaseDetailView.swift in Sources */,
-				B4718DE72FF15F890050E7A0 /* CollectionView.swift in Sources */,
-				B4718DE92FF162150050E7A0 /* AddReleaseView.swift in Sources */,
-				B4718DEB2FF164FA0050E7A0 /* TrackFormView.swift in Sources */,
-				B4718DE12FF15CDB0050E7A0 /* Track.swift in Sources */,
-				B4718DDF2FF15CD90050E7A0 /* Release.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
