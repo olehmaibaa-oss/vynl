@@ -3,7 +3,7 @@ package vynl.pages;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.ios.IOSDriver;
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
+import vynl.Config;
 
 /** The collection screen — list of releases, empty state, add entry points. */
 public class CollectionPage extends BasePage {
@@ -32,15 +32,17 @@ public class CollectionPage extends BasePage {
      * than the row container, whose element type is ambiguous.
      */
     public boolean isReleaseVisible(String artist) {
-        try {
-            return driver.findElement(staticTextWithLabel(artist)).isDisplayed();
-        } catch (NoSuchElementException e) {
-            return false;
-        }
+        return isVisible(staticTextWithLabel(artist), Config.elementTimeout());
+    }
+
+    /** Short budget — for asserting a release is gone, e.g. after a delete. */
+    public boolean isReleaseGone(String artist) {
+        return isGone(staticTextWithLabel(artist), Config.absenceTimeout());
     }
 
     public void openRelease(String artist) {
-        driver.findElement(staticTextWithLabel(artist)).click();
+        waitFor(org.openqa.selenium.support.ui.ExpectedConditions
+                .elementToBeClickable(staticTextWithLabel(artist))).click();
     }
 
     private static By staticTextWithLabel(String label) {

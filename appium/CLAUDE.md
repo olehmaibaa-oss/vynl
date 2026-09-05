@@ -51,16 +51,19 @@ appium/
 ├── pom.xml
 └── src/test/
     ├── java/vynl/
-    │   ├── Hooks.java              @Before/@After — driver lifecycle + capabilities
+    │   ├── Hooks.java              @Before/@After — driver lifecycle
+    │   ├── Config.java             config.properties + -D overrides
     │   ├── DriverManager.java      ThreadLocal driver holder
     │   ├── AddReleaseSteps.java    step definitions (no locators — page objects only)
     │   ├── RunCucumberTest.java    JUnit suite entry point
     │   └── pages/
-    │       ├── BasePage.java       driver + find/tap/type/isEnabled by accessibility id
+    │       ├── BasePage.java       explicit waits + find/tap/type by accessibility id
     │       ├── CollectionPage.java collection screen
     │       └── AddReleasePage.java add-release form
-    └── resources/features/
-        └── add_release.feature     Gherkin scenarios
+    └── resources/
+        ├── config.properties       capabilities, timeouts
+        └── features/
+            └── add_release.feature Gherkin scenarios
 ```
 
 Page objects take the driver through the constructor and get it from `DriverManager`
@@ -71,27 +74,38 @@ step rather than as fields, so they never depend on glue-instantiation order vs 
 `ReleaseDetailPage` and `TrackFormPage` don't exist yet — there are no scenarios for
 them, and empty page objects rot.
 
-**Still a young framework.** Remaining gaps (see "Roadmap"): no explicit waits (a blanket
-10s implicit wait in Hooks), no retry logic, no reporting, capabilities hardcoded.
+**There is no implicit wait.** Every lookup in `BasePage` waits explicitly. Do not add
+`implicitlyWait` back: mixing the two makes timings unpredictable, because the implicit
+wait applies inside each polling attempt of the explicit one.
+
+**Still a young framework.** Remaining gaps (see "Roadmap"): one scenario, no gesture or
+screenshot helpers, no retry logic, no reporting, no CI.
 
 ---
 
-## Capabilities (in Hooks.java)
+## Configuration
 
+Capabilities and timeouts live in `src/test/resources/config.properties`, read by
+`Config.java`. `Hooks` only assembles them — put no literals there.
+
+Any key can be overridden on the command line without editing the file, which is how CI
+and one-off runs should set things:
+
+```bash
+mvn test -Dios.udid=A0EC2CC4-88A7-423A-B851-C59705474E84
+mvn test -Dwait.elementTimeoutSec=20
 ```
-platformName: iOS
-appium:automationName: XCUITest
-appium:deviceName: iPhone 17 Pro Max
-appium:platformVersion: 26.5
-appium:udid: A0EC2CC4-88A7-423A-B851-C59705474E84
-appium:bundleId: dev.vynl
-appium:processArguments: { args: ["-uitesting"] }
-```
+
+**`ios.udid=auto`** (the default) resolves to whichever simulator is currently booted, so
+a rebuilt or replaced simulator no longer breaks every run. It fails with a clear message
+when nothing is booted, or when several simulators are — set an explicit UDID then.
+
+**Two timeouts, used deliberately:** `wait.elementTimeoutSec` for things expected to
+appear, `wait.absenceTimeoutSec` (short) for asserting something is NOT there. A negative
+check paid at the full element timeout makes a suite crawl.
 
 **Test isolation:** the `-uitesting` launch argument makes the app use an in-memory SwiftData
 store, so every test run starts from a clean database regardless of manual usage. Always pass it.
-
-If the simulator or its UDID changes, the capabilities need updating (`xcrun simctl list devices booted`).
 
 WDA timeouts were raised (`wdaLaunchTimeout` / `wdaConnectionTimeout`) because the first
 WebDriverAgent build exceeded the default. `useNewWDA: true` forces a rebuild each run — this can
@@ -168,13 +182,10 @@ before it exists to make that agent possible and trustworthy.
 
 1. ~~**Page objects**~~ — DONE for `CollectionPage` / `AddReleasePage` (+ `BasePage`,
    `DriverManager`). `ReleaseDetailPage` / `TrackFormPage` come with their scenarios.
-2. **Explicit waits** — replace the blanket implicit wait with targeted `WebDriverWait`
-   conditions; add a small wait helper. Do this before writing more scenarios, or every
-   new scenario inherits the implicit wait and the rewrite touches twenty places
-   instead of two.
-3. **Config extraction** — move capabilities out of `Hooks.java` into a properties/config
-   file so device, platform version and UDID aren't hardcoded. The UDID already breaks
-   runs whenever the simulator changes.
+2. ~~**Explicit waits**~~ — DONE. Implicit wait removed; `BasePage` waits on presence,
+   visibility or clickability, with a short separate budget for negative checks.
+3. ~~**Config extraction**~~ — DONE. `config.properties` + `Config.java`, `-D` overrides,
+   `ios.udid=auto` resolves the booted simulator.
 4. **More coverage, written by hand** — the remaining Gherkin scenarios already carried as
    acceptance criteria in Jira (validation, edit, cascade delete, swipe-delete). Four or
    five scenarios covering different interaction shapes (form, list, alert, swipe) are
