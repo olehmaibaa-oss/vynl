@@ -1,8 +1,7 @@
 package vynl.pages;
 
-import io.appium.java_client.AppiumBy;
 import io.appium.java_client.ios.IOSDriver;
-import org.openqa.selenium.By;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import vynl.config.Config;
 
 /** The collection screen — list of releases, empty state, add entry points. */
@@ -40,13 +39,8 @@ public class CollectionPage extends BasePage {
         return isGone(staticTextWithLabel(artist), Config.absenceTimeout());
     }
 
-    public void openRelease(String artist) {
-        waitFor(org.openqa.selenium.support.ui.ExpectedConditions
-                .elementToBeClickable(staticTextWithLabel(artist))).click();
-    }
-
-    private static By staticTextWithLabel(String label) {
-        return AppiumBy.iOSNsPredicateString(
-                "type == 'XCUIElementTypeStaticText' AND label == '" + label + "'");
+    public ReleaseDetailPage openRelease(String artist) {
+        waitFor(ExpectedConditions.elementToBeClickable(staticTextWithLabel(artist))).click();
+        return new ReleaseDetailPage(driver);
     }
 }

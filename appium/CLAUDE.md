@@ -54,19 +54,28 @@ appium/
     │   ├── config/Config.java      config.properties + -D overrides
     │   ├── driver/DriverManager.java  ThreadLocal driver holder
     │   └── pages/
-    │       ├── BasePage.java       explicit waits + find/tap/type by accessibility id
+    │       ├── BasePage.java       explicit waits, find/tap/type, label predicate
     │       ├── CollectionPage.java collection screen
-    │       └── AddReleasePage.java add-release form
+    │       ├── AddReleasePage.java add-release form (also the edit form)
+    │       └── ReleaseDetailPage.java  release detail screen
     └── test/
         ├── java/vynl/             ← the tests
         │   ├── RunCucumberTest.java   JUnit suite entry point
         │   ├── hooks/Hooks.java       @Before/@After — driver lifecycle
-        │   └── steps/AddReleaseSteps.java  step definitions (page objects only)
+        │   └── steps/               step definitions (page objects only)
+        │       ├── AddReleaseSteps.java
+        │       └── ReleaseDetailSteps.java
         └── resources/
             ├── config.properties   capabilities, timeouts
             └── features/
-                └── add_release.feature  Gherkin scenarios
+                ├── add_release.feature
+                └── release_detail.feature
 ```
+
+**Gherkin gotcha:** `/` is the alternation operator in Cucumber Expressions. A step like
+`a release {string} / {string} exists` must escape it (`\\/` in the Java annotation) — otherwise
+`" / "` parses as an empty alternative and glue creation fails for the WHOLE suite, not just
+that step.
 
 **The main/test split is deliberate.** `src/main` is framework code and must stay free of
 Cucumber and JUnit; `java-client` is `compile` scope, cucumber and junit are `test` scope,
@@ -163,6 +172,21 @@ These are set in the Swift code and are the contract between app and tests. Matc
   more reliable than targeting the row container, whose type is ambiguous.
 - The delete confirmation uses `.alert` (not `.confirmationDialog`) deliberately: confirmationDialog
   buttons don't reliably expose accessibility identifiers to UI automation.
+- **`LabeledContent` does not expose its value on its own.** On the release detail screen the
+  field "Artist" holding "Surgeon" surfaces as ONE StaticText labelled `Artist, Surgeon` — field
+  name and value joined by a comma and a space. A predicate on `label == 'Surgeon'` finds nothing
+  there. Go through `ReleaseDetailPage.showsField("Artist", "Surgeon")`, which builds the pair.
+- **The release title exists twice on the detail screen**: `ReleaseDetailView` sets
+  `.navigationTitle(release.title)`, which surfaces as its own StaticText, and the body renders
+  `LabeledContent("Title", …)`. Their labels differ (`Internal Empire` vs `Title, Internal Empire`),
+  so a predicate is not ambiguous by accident — but a bare title match asserts the navigation bar,
+  not the content. All `ReleaseDetailPage` lookups are nested inside `releaseDetail.view`, which
+  holds the body only. Do not use index-based locators to disambiguate.
+- `releaseDetail.view` is a `CollectionView`; nested lookups inside it work
+  (`ExpectedConditions.visibilityOfNestedElementsLocatedBy`).
+- When a new screen's assertions are being written, dump the page source once
+  (`GET /session/<id>/source`) rather than guessing how SwiftUI exposes a control. The two notes
+  above both came out of a dump and contradicted a reasonable-looking guess.
 
 ---
 
@@ -229,11 +253,45 @@ Deliberately parked, and NOT to be implemented speculatively:
 
 ---
 
+## Workflow
+
+Work arrives as a Jira ticket in project `SCRUM`, labelled `automation`, under the epic for
+the current coverage push. One ticket per session.
+
+`To Do → In Progress → In QA → Done`
+
+- **To Do** — the ticket carries its scenarios, the page objects it touches, and usually a
+  comment with app behaviour already verified against the Swift source. Read the ticket, its
+  comments, and the story its "Source AC" points to. Don't ask for context that is already there.
+- **In Progress** — move it yourself when you pick it up.
+- **In QA** — you move it here once the code is written and `mvn test` is green. This does
+  **not** mean handed to a tester.
+- **Done** — only the human moves a ticket to Done.
+
+**What `In QA` is for.** The failure mode of a test is not going red, it is going green on
+nothing: an assertion that is always true, an `isDisplayed()` on an element that is always
+present, a step that silently no-ops. None of that shows in a log. It shows only when a person
+reads what the scenario actually checks. That review is the gate, which is why the run report
+matters more than the exit code.
+
+**Reporting.** Say what each scenario proves, not that N scenarios passed. Name anything you
+dropped or changed from the ticket and why. If a scenario turned out to assert nothing, say so
+and delete it — a green test that checks nothing is worse than no test, because it buys false
+confidence.
+
+**When the app is wrong, not the test.** A test that fails because the app genuinely
+misbehaves, or an AC that describes behaviour the app does not have, is a finding. Post it as
+a comment on the source story and assert the behaviour that exists. Never edit `../vynl/` from
+here, and never bend a scenario until it goes green.
+
+---
+
 ## Conventions
 
 - **Gherkin scenarios come from Jira acceptance criteria.** Each story in the Jira project `SCRUM`
   carries Gherkin AC; scenarios here should mirror them rather than being invented.
-- Feature files in `src/test/resources/features/`, step definitions in `src/test/java/vynl/`.
+- Feature files in `src/test/resources/features/`, step definitions in `src/test/java/vynl/steps/`,
+  page objects in `src/main/java/vynl/pages/`.
 - Keep step definitions readable and behaviour-level; technical detail belongs in page objects
   (once they exist) or helpers.
 - Don't use `TouchAction` — it's removed from Appium. Use W3C Actions (`PointerInput`/`Sequence`)

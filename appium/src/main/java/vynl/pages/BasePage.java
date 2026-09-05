@@ -72,6 +72,21 @@ public abstract class BasePage {
         }
     }
 
+    /**
+     * Visibility check scoped to a container, for screens where the same string
+     * can appear both inside and outside the content area (the release detail
+     * screen renders the title in the navigation bar as well as in the body).
+     */
+    protected boolean isVisibleWithin(By container, By locator, Duration timeout) {
+        try {
+            new WebDriverWait(driver, timeout)
+                    .until(ExpectedConditions.visibilityOfNestedElementsLocatedBy(container, locator));
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
     /** Waits for the element to disappear (or never appear). */
     protected boolean isGone(By locator, Duration timeout) {
         try {
@@ -88,5 +103,20 @@ public abstract class BasePage {
 
     protected static By byId(String accessibilityId) {
         return AppiumBy.accessibilityId(accessibilityId);
+    }
+
+    /**
+     * Matches a StaticText by its exact accessibility label. Values on screens
+     * without per-field identifiers are asserted through this — kept here so
+     * the predicate lives in one place instead of once per page object.
+     *
+     * <p>Note what a label actually is: a plain SwiftUI text exposes its own
+     * string ("Surgeon"), but a {@code LabeledContent} exposes the pair joined
+     * with a comma ("Artist, Surgeon"). Callers must pass what the element
+     * really carries; see {@code ReleaseDetailPage.fieldLabel}.
+     */
+    protected static By staticTextWithLabel(String label) {
+        return AppiumBy.iOSNsPredicateString(
+                "type == 'XCUIElementTypeStaticText' AND label == '" + label + "'");
     }
 }
