@@ -38,7 +38,11 @@ public class ReleaseDetailSteps {
         createRelease(artist, title, genre);
     }
 
-    /** The add form has no label or year inputs, so a release created there has neither. */
+    /**
+     * The add form does have label and year inputs ({@code AddReleasePage.setLabel} /
+     * {@code setYear}); this step deliberately leaves them untouched, which is what
+     * makes the detail screen render the placeholders.
+     */
     @Given("a release with no label and no year exists")
     public void aReleaseWithNoOptionalFieldsExists() {
         createRelease(DEFAULT_ARTIST, DEFAULT_TITLE, DEFAULT_GENRE);
@@ -72,10 +76,12 @@ public class ReleaseDetailSteps {
         assertTrue(detail.showsField("Status", status), "Status not shown as " + status);
     }
 
-    @Then("label and year show {string}")
-    public void labelAndYearShow(String placeholder) {
-        assertTrue(detail.showsField("Label", placeholder), "Label not shown as " + placeholder);
-        assertTrue(detail.showsField("Year", placeholder), "Year not shown as " + placeholder);
+    // What an empty optional renders as is a property of the screen, not something
+    // the feature file should be spelling out — the page object owns the placeholder.
+    @Then("label and year show the empty placeholder")
+    public void labelAndYearShowTheEmptyPlaceholder() {
+        assertTrue(detail.showsEmptyField("Label"), "Label does not show the empty placeholder");
+        assertTrue(detail.showsEmptyField("Year"), "Year does not show the empty placeholder");
     }
 
     @Then("I see the add-track call to action")

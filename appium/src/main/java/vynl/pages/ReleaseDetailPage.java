@@ -23,7 +23,6 @@ import vynl.config.Config;
 public class ReleaseDetailPage extends BasePage {
 
     private static final String VIEW = "releaseDetail.view";
-    private static final String TRACK_ROW = "releaseDetail.trackRow";
     private static final String ADD_TRACK_BUTTON = "releaseDetail.addTrackButton";
     private static final String TOOLBAR_ADD_TRACK_BUTTON = "releaseDetail.toolbarAddTrackButton";
     private static final String EDIT_BUTTON = "releaseDetail.editButton";
@@ -69,10 +68,6 @@ public class ReleaseDetailPage extends BasePage {
         return isVisible(ADD_TRACK_BUTTON);
     }
 
-    public boolean hasTrackRows() {
-        return isVisible(TRACK_ROW);
-    }
-
     // --- entry points ---
 
     public boolean isEditAvailable() {
@@ -81,10 +76,6 @@ public class ReleaseDetailPage extends BasePage {
 
     public boolean isToolbarAddTrackAvailable() {
         return isVisible(TOOLBAR_ADD_TRACK_BUTTON);
-    }
-
-    public boolean isDeleteAvailable() {
-        return isVisible(DELETE_BUTTON);
     }
 
     // --- navigation ---
