@@ -2,42 +2,51 @@
 //  vynlUITests.swift
 //  vynlUITests
 //
-//  Created by Mylo Qyora on 28/06/2026.
-//
 
 import XCTest
 
 final class vynlUITests: XCTestCase {
 
+    var app: XCUIApplication!
+
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        app = XCUIApplication()
+        // Use in-memory SwiftData store so each test starts with a clean collection.
+        app.launchArguments = ["-uitesting"]
+        app.launch()
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        app = nil
     }
 
+    // Verifies the full add-release flow from empty state to list appearance.
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
-        app.launch()
+    func testAddReleaseFromEmptyState() throws {
+        // Wait for the empty-state CTA to appear before tapping.
+        let addButton = app.buttons["collection.addReleaseButton"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 5))
+        addButton.tap()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
-    }
+        // Wait for the form sheet to animate in, then fill required fields.
+        let artistField = app.textFields["addRelease.artistField"]
+        XCTAssertTrue(artistField.waitForExistence(timeout: 3))
+        artistField.tap()
+        artistField.typeText("Surgeon")
 
-    @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+        let titleField = app.textFields["addRelease.titleField"]
+        titleField.tap()
+        titleField.typeText("Internal Empire")
+
+        let genreField = app.textFields["addRelease.genreField"]
+        genreField.tap()
+        genreField.typeText("Techno")
+
+        // Save the release.
+        app.buttons["addRelease.saveButton"].tap()
+
+        // The new release should appear in the collection.
+        XCTAssertTrue(app.staticTexts["Surgeon"].waitForExistence(timeout: 3))
     }
 }

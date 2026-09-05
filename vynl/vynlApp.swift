@@ -2,8 +2,6 @@
 //  vynlApp.swift
 //  vynl
 //
-//  Created by Mylo Qyora on 28/06/2026.
-//
 
 import SwiftUI
 import SwiftData
@@ -12,9 +10,11 @@ import SwiftData
 struct vynlApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Release.self,
+            Track.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let isUITesting = CommandLine.arguments.contains("-uitesting")
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isUITesting)
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
