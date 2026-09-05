@@ -161,20 +161,45 @@ Tapping a track row opens it for editing, pre-filled. Swipe-to-delete removes a 
 
 ## Roadmap for this framework
 
-In rough order. Each step is a deliberate move from "scripts that call Appium" toward a real framework.
+Ordered by what unblocks what, not by how mature it looks. The goal at the end of this
+list is a QA agent that closes the loop: a Jira story moves to `In QA`, the agent reads
+the diff and the Gherkin AC, runs the matching scenarios and posts a verdict. Everything
+before it exists to make that agent possible and trustworthy.
 
 1. ~~**Page objects**~~ — DONE for `CollectionPage` / `AddReleasePage` (+ `BasePage`,
    `DriverManager`). `ReleaseDetailPage` / `TrackFormPage` come with their scenarios.
-2. **Explicit waits** — replace the blanket implicit wait with targeted `WebDriverWait` conditions;
-   add a small wait helper.
-3. **Helpers/utilities** — gesture wrappers (swipe via `mobile: swipe`), screenshots, common flows.
-4. **Config extraction** — move capabilities out of `Hooks.java` into a properties/config file so
-   device, platform version and UDID aren't hardcoded.
-5. **Reporting** — Serenity or Allure, so failures produce readable, machine-parsable output.
-6. **More coverage** — the remaining Gherkin scenarios already written as acceptance criteria in Jira
-   (validation, edit, cascade delete, swipe-delete).
-7. **CI** — GitHub Actions running `mvn test` headlessly.
-8. **QA agent** — reads Jira issues in `In QA`, maps them to scenarios, runs them, posts a verdict.
+2. **Explicit waits** — replace the blanket implicit wait with targeted `WebDriverWait`
+   conditions; add a small wait helper. Do this before writing more scenarios, or every
+   new scenario inherits the implicit wait and the rewrite touches twenty places
+   instead of two.
+3. **Config extraction** — move capabilities out of `Hooks.java` into a properties/config
+   file so device, platform version and UDID aren't hardcoded. The UDID already breaks
+   runs whenever the simulator changes.
+4. **More coverage, written by hand** — the remaining Gherkin scenarios already carried as
+   acceptance criteria in Jira (validation, edit, cascade delete, swipe-delete). Four or
+   five scenarios covering different interaction shapes (form, list, alert, swipe) are
+   not just coverage: they are the corpus the agent later extrapolates its conventions
+   from. Written from one example, a generator invents its own style every time.
+   Helpers (gesture wrappers, screenshots, common flows) fall out of these scenarios —
+   write them when a scenario actually needs one, not speculatively.
+5. **One-command run** — a script (or CI job) that boots the simulator, starts Appium,
+   runs `mvn test` and reports. The agent needs a closed loop; an agent that writes a
+   test but cannot run it is a hypothesis generator.
+6. **QA agent, verifier first** — reads Jira issues in `In QA`, reads the diff and the AC,
+   maps them to EXISTING scenarios, runs them, posts a verdict as a Jira comment.
+   No generation yet. Useful immediately and needs no corpus.
+7. **QA agent, generator second** — generates new scenarios and step/page code from AC.
+   Needs step 4's corpus and a stable page-object API. Also needs a way to prove a
+   generated test actually catches a break (deliberately break the app, the test must
+   fail) — a green test that asserts nothing is worse than no test.
+8. **CI** — GitHub Actions running the suite on a macOS runner. Worth it once there are
+   several scenarios to protect; before that it runs air.
+
+Deliberately parked, and NOT to be implemented speculatively:
+
+- **Reporting (Serenity / Allure)** — cosmetics on top of a suite that barely exists.
+  Revisit when failures get hard to read, not before.
+- **Maestro** — a separate track that blocks nothing on this line.
 
 ---
 
