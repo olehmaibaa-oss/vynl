@@ -19,6 +19,7 @@ public class TrackFormPage extends BasePage {
     private static final String KEY_FIELD = "trackForm.keyField";
     private static final String SAVE_BUTTON = "trackForm.saveButton";
     private static final String CANCEL_BUTTON = "trackForm.cancelButton";
+    private static final String MOOD_ROW_PREFIX = "trackForm.mood.";
 
     public TrackFormPage(IOSDriver driver) {
         super(driver);
@@ -48,6 +49,20 @@ public class TrackFormPage extends BasePage {
     public TrackFormPage setKey(String key) {
         type(KEY_FIELD, key);
         return this;
+    }
+
+    /**
+     * Taps a mood row — selects it, or deselects it if selected. The Moods
+     * section sits below the text fields, so most rows start under the keyboard.
+     */
+    public TrackFormPage toggleMood(String mood) {
+        scrollToAndTap(MOOD_ROW_PREFIX + mood);
+        return this;
+    }
+
+    /** A selected mood row carries the Selected trait (XCUITest: selected=true). */
+    public boolean isMoodSelected(String mood) {
+        return find(MOOD_ROW_PREFIX + mood).isSelected();
     }
 
     public String bpm() {

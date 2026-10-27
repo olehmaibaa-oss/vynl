@@ -21,6 +21,10 @@ struct TrackFormView: View {
     @State private var title = ""
     @State private var bpmText = ""
     @State private var key = ""
+    /// Held in form state and written only on Save, so Cancel never leaks a change.
+    @State private var selectedMoods: Set<PersistentIdentifier> = []
+
+    @Query(sort: \MoodTag.name) private var vocabulary: [MoodTag]
 
     private var isSaveEnabled: Bool {
         !position.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -53,6 +57,14 @@ struct TrackFormView: View {
                     TextField("Key", text: $key)
                         .accessibilityIdentifier("trackForm.keyField")
                 }
+                Section {
+                    ForEach(vocabulary) { mood in
+                        moodRow(mood)
+                    }
+                } header: {
+                    Text("Moods")
+                        .accessibilityIdentifier("trackForm.moodsSection")
+                }
             }
             .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
@@ -77,6 +89,7 @@ struct TrackFormView: View {
                     title = track.title
                     bpmText = track.bpm.map { String($0) } ?? ""
                     key = track.key ?? ""
+                    selectedMoods = Set(track.moods.map(\.persistentModelID))
                 }
             }
         }
@@ -100,13 +113,44 @@ struct TrackFormView: View {
                 release: release
             )
             modelContext.insert(track)
+            track.moods = chosenMoods
         case .edit(let track):
             track.position = trimmedPosition
             track.title = trimmedTitle
             track.bpm = bpm
             track.key = trimmedKey.isEmpty ? nil : trimmedKey
+            track.moods = chosenMoods
         }
 
         dismiss()
+    }
+
+    private var chosenMoods: [MoodTag] {
+        vocabulary.filter { selectedMoods.contains($0.persistentModelID) }
+    }
+
+    /// One toggle row per mood. The checkmark is the visual state; the Selected
+    /// trait is the same state for VoiceOver and UI tests.
+    private func moodRow(_ mood: MoodTag) -> some View {
+        let isSelected = selectedMoods.contains(mood.persistentModelID)
+        return Button {
+            if isSelected {
+                selectedMoods.remove(mood.persistentModelID)
+            } else {
+                selectedMoods.insert(mood.persistentModelID)
+            }
+        } label: {
+            HStack {
+                Text(mood.name)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
+                }
+            }
+        }
+        .foregroundStyle(.primary)
+        .accessibilityIdentifier("trackForm.mood.\(mood.name)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

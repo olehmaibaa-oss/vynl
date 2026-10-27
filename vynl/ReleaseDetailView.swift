@@ -45,15 +45,29 @@ struct ReleaseDetailView: View {
                         Button {
                             editingTrack = track
                         } label: {
-                            HStack {
+                            HStack(alignment: .firstTextBaseline) {
                                 Text(track.position)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .frame(minWidth: 32, alignment: .leading)
-                                Text(track.title)
-                                    .foregroundStyle(.primary)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(track.title)
+                                        .foregroundStyle(.primary)
+                                    let moods = moodLine(for: track)
+                                    if !moods.isEmpty {
+                                        Text(moods)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .accessibilityIdentifier("releaseDetail.trackMoods")
+                                    }
+                                }
                             }
                         }
+                        // Label stays the track's identity ("A1, Magneze"); the
+                        // moods are its value. VoiceOver reads both, and the
+                        // label stays stable for anything that matches on it.
+                        .accessibilityLabel("\(track.position), \(track.title)")
+                        .accessibilityValue(moodLine(for: track))
                         .accessibilityIdentifier("releaseDetail.trackRow")
                     }
                     .onDelete(perform: deleteTracks)
@@ -106,6 +120,11 @@ struct ReleaseDetailView: View {
         } message: {
             Text("This will permanently delete the release and all its tracks.")
         }
+    }
+
+    /// A track's moods, A–Z, comma-separated. Empty when it has none.
+    private func moodLine(for track: Track) -> String {
+        track.moods.map(\.name).sorted().joined(separator: ", ")
     }
 
     private func deleteTracks(at offsets: IndexSet) {

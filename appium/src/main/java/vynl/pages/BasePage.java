@@ -48,6 +48,18 @@ public abstract class BasePage {
         waitFor(ExpectedConditions.elementToBeClickable(byId(accessibilityId))).click();
     }
 
+    /**
+     * Taps an element that may be scrolled out of view — e.g. a row below the
+     * keyboard in a long form. Plain {@link #tap} waits for "clickable", which
+     * includes displayed, and an off-screen row never is. XCUITest's own tap
+     * scrolls the element to hittable first, so waiting for presence is enough.
+     * ({@code mobile: scroll toVisible} was tried and can't find the scrollable
+     * parent inside a SwiftUI Form.)
+     */
+    protected void scrollToAndTap(String accessibilityId) {
+        find(accessibilityId).click();
+    }
+
     protected void type(String accessibilityId, String text) {
         findVisible(accessibilityId).sendKeys(text);
     }

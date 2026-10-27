@@ -35,6 +35,7 @@ public class ReleaseDetailPage extends BasePage {
     private static final String CONFIRM_DELETE_BUTTON = "releaseDetail.confirmDeleteButton";
     private static final String CANCEL_DELETE_BUTTON = "releaseDetail.cancelDeleteButton";
     private static final String TRACK_ROW = "releaseDetail.trackRow";
+    private static final String TRACK_MOODS = "releaseDetail.trackMoods";
 
     /** What an empty optional field renders as. */
     public static final String EMPTY_PLACEHOLDER = "—";
@@ -104,6 +105,22 @@ public class ReleaseDetailPage extends BasePage {
         return labelsOf(TRACK_ROW).stream()
                 .map(label -> label.split(", ", 2)[0])
                 .toList();
+    }
+
+    /**
+     * A track's moods as the row exposes them: the row's accessibility value,
+     * e.g. "deep, hypnotic". The label stays "A1, Magneze" on purpose, so moods
+     * never break a match on the track's identity. Empty when it has none.
+     */
+    public String moodsOf(String position) {
+        String value = waitFor(ExpectedConditions.presenceOfElementLocated(trackRowAt(position)))
+                .getAttribute("value");
+        return value == null ? "" : value;
+    }
+
+    /** No mood value on the row and no mood line rendered. Short budget for the second half. */
+    public boolean showsNoMoods(String position) {
+        return moodsOf(position).isEmpty() && isGone(byId(TRACK_MOODS), Config.absenceTimeout());
     }
 
     /** Tapping a row opens that track in the form, pre-filled. */

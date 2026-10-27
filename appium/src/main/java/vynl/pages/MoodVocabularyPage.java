@@ -55,6 +55,12 @@ public class MoodVocabularyPage extends BasePage {
         return this;
     }
 
+    /** Pops back to the collection through the navigation bar. */
+    public CollectionPage goBack() {
+        driver.navigate().back();
+        return new CollectionPage(driver);
+    }
+
     private static By row(String mood) {
         return AppiumBy.iOSNsPredicateString("name == '" + ROW + "' AND label == '" + mood + "'");
     }
