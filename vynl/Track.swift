@@ -14,6 +14,10 @@ final class Track {
     var key: String?
     var release: Release?
 
+    /// Many-to-many with MoodTag; the inverse and delete rule are declared on
+    /// `MoodTag.tracks`. Deleting a track never deletes a mood.
+    var moods: [MoodTag] = []
+
     init(position: String, title: String, bpm: Int? = nil, key: String? = nil, release: Release? = nil) {
         self.position = position
         self.title = title

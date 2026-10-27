@@ -9,15 +9,18 @@ import SwiftData
 @main
 struct vynlApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Release.self,
-            Track.self,
-        ])
+        let schema = AppSchema.schema
         let isUITesting = CommandLine.arguments.contains("-uitesting")
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isUITesting)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            // An in-memory UI-test store is new on every launch, so its "seeded"
+            // flag must be too — otherwise a persisted flag from an earlier run
+            // would leave the fresh store without the default moods.
+            let flags = isUITesting ? UserDefaults(suiteName: "uitesting-\(UUID().uuidString)")! : .standard
+            try MoodVocabulary.seedIfNeeded(in: ModelContext(container), flags: flags)
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }

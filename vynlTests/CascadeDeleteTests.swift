@@ -18,7 +18,7 @@ struct CascadeDeleteTests {
     private var context: ModelContext { container.mainContext }
 
     init() throws {
-        let schema = Schema([Release.self, Track.self])
+        let schema = AppSchema.schema
         container = try ModelContainer(
             for: schema,
             configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
