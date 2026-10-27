@@ -100,6 +100,9 @@ struct AddReleaseView: View {
     }
 
     private func save() {
+        // Re-filter at save time: the onChange filter can miss a keystroke under
+        // fast input, and Int("19b97") would silently drop the year (SCRUM-27).
+        let year = Int(yearText.filter(\.isNumber))
         let trimmedArtist = artist.trimmingCharacters(in: .whitespaces)
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
         let trimmedGenre = genre.trimmingCharacters(in: .whitespaces)
@@ -112,7 +115,7 @@ struct AddReleaseView: View {
                 title: trimmedTitle,
                 genre: trimmedGenre,
                 label: trimmedLabel.isEmpty ? nil : trimmedLabel,
-                year: Int(yearText)
+                year: year
             )
             modelContext.insert(release)
         case .edit(let release):
@@ -120,7 +123,7 @@ struct AddReleaseView: View {
             release.title = trimmedTitle
             release.genre = trimmedGenre
             release.label = trimmedLabel.isEmpty ? nil : trimmedLabel
-            release.year = Int(yearText)
+            release.year = year
             release.status = status
         }
 

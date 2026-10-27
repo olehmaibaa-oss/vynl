@@ -86,7 +86,9 @@ struct TrackFormView: View {
         let trimmedPosition = position.trimmingCharacters(in: .whitespaces)
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
         let trimmedKey = key.trimmingCharacters(in: .whitespaces)
-        let bpm = Int(bpmText)
+        // Re-filter at save time: the onChange filter can miss a keystroke under
+        // fast input, and Int("12b3") would silently drop the bpm (SCRUM-27).
+        let bpm = Int(bpmText.filter(\.isNumber))
 
         switch mode {
         case .add(let release):
