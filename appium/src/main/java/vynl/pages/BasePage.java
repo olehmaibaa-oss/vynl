@@ -49,6 +49,24 @@ public abstract class BasePage {
         findVisible(accessibilityId).sendKeys(text);
     }
 
+    /**
+     * Replaces a field's content. Edit forms open pre-filled, so a plain
+     * {@link #type} would append to what is already there.
+     */
+    protected void clearAndType(String accessibilityId, String text) {
+        WebElement field = findVisible(accessibilityId);
+        field.clear();
+        field.sendKeys(text);
+    }
+
+    /**
+     * The field's current text. Note that XCUITest reports an empty text field's
+     * placeholder as its value, so callers comparing against "" will be misled.
+     */
+    protected String valueOf(String accessibilityId) {
+        return find(accessibilityId).getAttribute("value");
+    }
+
     protected boolean isEnabled(String accessibilityId) {
         return find(accessibilityId).isEnabled();
     }

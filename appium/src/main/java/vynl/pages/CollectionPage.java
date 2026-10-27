@@ -27,6 +27,14 @@ public class CollectionPage extends BasePage {
     }
 
     /**
+     * The empty state has no identifier of its own, but its add CTA
+     * ({@code collection.addReleaseButton}) only exists inside it.
+     */
+    public boolean isEmptyStateVisible() {
+        return isVisible(ADD_RELEASE_BUTTON);
+    }
+
+    /**
      * Row text resolves as StaticText in XCUITest, so we match the label rather
      * than the row container, whose element type is ambiguous.
      */
