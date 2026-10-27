@@ -136,10 +136,8 @@ public class TrackSteps {
     }
 
     /**
-     * Asserted by behaviour, not by the button's enabled attribute — see
-     * TrackFormPage.attemptSave for why that attribute can't be trusted. Then
-     * proves nothing was persisted either: after cancelling, the release still
-     * has no tracks.
+     * Asserted by behaviour: tapping Save leaves the sheet open, and after
+     * cancelling the release still has no tracks, so nothing was persisted.
      */
     @Then("saving the track is blocked")
     public void savingTheTrackIsBlocked() {

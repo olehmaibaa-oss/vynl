@@ -5,11 +5,14 @@ import io.appium.java_client.ios.IOSDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import vynl.config.Config;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Shared plumbing for page objects: holds the driver and wraps the few
@@ -69,6 +72,48 @@ public abstract class BasePage {
 
     protected boolean isEnabled(String accessibilityId) {
         return find(accessibilityId).isEnabled();
+    }
+
+    /**
+     * Enabled state of a toolbar button. On iOS 26 a SwiftUI toolbar button is
+     * wrapped in an {@code XCUIElementTypeOther} that carries the same
+     * identifier and always reports {@code enabled=true}; a plain lookup by
+     * accessibility id returns that wrapper first. The button inside reports its
+     * state truthfully, so target the Button element itself.
+     */
+    protected boolean isButtonEnabled(String accessibilityId) {
+        return waitFor(ExpectedConditions.presenceOfElementLocated(button(accessibilityId))).isEnabled();
+    }
+
+    protected static By button(String accessibilityId) {
+        return AppiumBy.iOSNsPredicateString(
+                "type == 'XCUIElementTypeButton' AND name == '" + accessibilityId + "'");
+    }
+
+    /**
+     * Swipes a list row left to reveal its delete action, then taps it. A swipe
+     * plus an explicit tap rather than a full-width swipe: the full swipe also
+     * deletes, but only past a distance threshold, so it's the flakier path. The
+     * revealed "Delete" is a system swipe action and carries no identifier of
+     * ours, hence the label match.
+     */
+    protected void swipeToDelete(By row) {
+        WebElement element = waitFor(ExpectedConditions.visibilityOfElementLocated(row));
+        driver.executeScript("mobile: swipe", Map.of(
+                "direction", "left",
+                "elementId", ((RemoteWebElement) element).getId()));
+        waitFor(ExpectedConditions.elementToBeClickable(SWIPE_DELETE_ACTION)).click();
+    }
+
+    private static final By SWIPE_DELETE_ACTION = AppiumBy.iOSNsPredicateString(
+            "type == 'XCUIElementTypeButton' AND label == 'Delete'");
+
+    /** Labels of every element with this identifier, in on-screen order. */
+    protected List<String> labelsOf(String accessibilityId) {
+        find(accessibilityId);
+        return driver.findElements(byId(accessibilityId)).stream()
+                .map(e -> e.getAttribute("label"))
+                .toList();
     }
 
     protected boolean isVisible(String accessibilityId) {

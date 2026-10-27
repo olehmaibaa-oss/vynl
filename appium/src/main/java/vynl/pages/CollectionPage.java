@@ -11,6 +11,7 @@ public class CollectionPage extends BasePage {
     private static final String RELEASE_ROW = "collection.releaseRow";
     private static final String ADD_RELEASE_BUTTON = "collection.addReleaseButton";
     private static final String TOOLBAR_ADD_BUTTON = "collection.toolbarAddButton";
+    private static final String MOODS_BUTTON = "collection.moodsButton";
 
     public CollectionPage(IOSDriver driver) {
         super(driver);
@@ -19,6 +20,12 @@ public class CollectionPage extends BasePage {
     public AddReleasePage tapAddFromEmptyState() {
         tap(ADD_RELEASE_BUTTON);
         return new AddReleasePage(driver);
+    }
+
+    /** The gear in the Collection toolbar pushes the mood vocabulary. */
+    public MoodVocabularyPage openMoods() {
+        tap(MOODS_BUTTON);
+        return new MoodVocabularyPage(driver);
     }
 
     public AddReleasePage tapToolbarAdd() {

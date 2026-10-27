@@ -22,6 +22,15 @@ struct CollectionView: View {
             ReleaseDetailView(release: release)
         }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                NavigationLink {
+                    MoodVocabularyView()
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .accessibilityLabel("Moods")
+                .accessibilityIdentifier("collection.moodsButton")
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     showAddRelease = true

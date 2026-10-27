@@ -61,10 +61,11 @@ public class TrackFormPage extends BasePage {
     /**
      * Taps Save without assuming it took effect, for asserting a blocked save.
      *
-     * <p>Deliberately no {@code isSaveEnabled()}: on iOS 26 a disabled SwiftUI
-     * toolbar button inside a sheet still reports {@code enabled=true} to
-     * XCUITest, while being visibly greyed out and ignoring taps. The only
-     * reliable signal is behaviour — the sheet stays open.
+     * <p>Behaviour is asserted rather than the button's enabled state because
+     * it is the stronger claim: the sheet stays open and nothing is written.
+     * (The enabled state can be read too, via {@link #isButtonEnabled}: a plain
+     * lookup by id hits iOS 26's toolbar wrapper element, which always says
+     * enabled — that, not XCUITest, is what made it look untrustworthy.)
      */
     public TrackFormPage attemptSave() {
         find(SAVE_BUTTON).click();

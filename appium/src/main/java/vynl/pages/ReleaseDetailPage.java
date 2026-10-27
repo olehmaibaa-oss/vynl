@@ -3,13 +3,10 @@ package vynl.pages;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.ios.IOSDriver;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.remote.RemoteWebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import vynl.config.Config;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * The release detail screen: the release's values, its track list, and the
@@ -38,8 +35,6 @@ public class ReleaseDetailPage extends BasePage {
     private static final String CONFIRM_DELETE_BUTTON = "releaseDetail.confirmDeleteButton";
     private static final String CANCEL_DELETE_BUTTON = "releaseDetail.cancelDeleteButton";
     private static final String TRACK_ROW = "releaseDetail.trackRow";
-    private static final By SWIPE_DELETE_ACTION = AppiumBy.iOSNsPredicateString(
-            "type == 'XCUIElementTypeButton' AND label == 'Delete'");
 
     /** What an empty optional field renders as. */
     public static final String EMPTY_PLACEHOLDER = "—";
@@ -106,9 +101,8 @@ public class ReleaseDetailPage extends BasePage {
 
     /** Positions of every listed track, in on-screen order. */
     public List<String> trackPositions() {
-        find(TRACK_ROW);
-        return driver.findElements(byId(TRACK_ROW)).stream()
-                .map(row -> row.getAttribute("label").split(", ", 2)[0])
+        return labelsOf(TRACK_ROW).stream()
+                .map(label -> label.split(", ", 2)[0])
                 .toList();
     }
 
@@ -118,19 +112,9 @@ public class ReleaseDetailPage extends BasePage {
         return new TrackFormPage(driver);
     }
 
-    /**
-     * Swipe left to reveal the row's delete action, then tap it. A partial swipe
-     * plus an explicit tap is used rather than a full-width swipe: the full swipe
-     * also deletes, but only past a distance threshold, which makes it the
-     * flakier of the two. The revealed "Delete" is a system swipe action and
-     * carries no identifier of ours, hence the label match.
-     */
+    /** Swipe the row left and tap its revealed delete action. */
     public void swipeDeleteTrack(String position) {
-        WebElement row = waitFor(ExpectedConditions.visibilityOfElementLocated(trackRowAt(position)));
-        driver.executeScript("mobile: swipe", Map.of(
-                "direction", "left",
-                "elementId", ((RemoteWebElement) row).getId()));
-        waitFor(ExpectedConditions.elementToBeClickable(SWIPE_DELETE_ACTION)).click();
+        swipeToDelete(trackRowAt(position));
     }
 
     private static By trackRow(String position, String title) {
