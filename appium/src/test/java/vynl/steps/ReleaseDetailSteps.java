@@ -53,6 +53,21 @@ public class ReleaseDetailSteps {
         createRelease(DEFAULT_ARTIST, DEFAULT_TITLE, DEFAULT_GENRE);
     }
 
+    /** The year is typed as-is; the app must keep only the digits (SCRUM-27). */
+    @Given("a release with year {string} exists")
+    public void aReleaseWithYearExists(String year) {
+        this.artist = DEFAULT_ARTIST;
+        collection().tapAddFromEmptyState()
+                .fillRequired(DEFAULT_ARTIST, DEFAULT_TITLE, DEFAULT_GENRE)
+                .setYear(year)
+                .save();
+    }
+
+    @Then("the year is {string}")
+    public void theYearIs(String year) {
+        assertTrue(detail.showsField("Year", year), "Year not shown as " + year);
+    }
+
     @Given("I am on a release detail screen")
     public void iAmOnAReleaseDetailScreen() {
         createRelease(DEFAULT_ARTIST, DEFAULT_TITLE, DEFAULT_GENRE);
