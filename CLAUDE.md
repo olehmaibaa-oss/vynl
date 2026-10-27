@@ -57,6 +57,25 @@ changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 
 E2-S5 / E2-S6 (SCRUM-38, 39). None of it is built yet — see the data model below for what is
 "today" vs "planned".
 
+**Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
+Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
+- **Stack (DR-7):** a card is **collapsed** by default: die-cut sleeve, artist, title, "N tracks"
+  ("N/M" while a filter is active). A tap **expands it in place**: the record slides out, label ·
+  year, genres, tracklist. It collapses on a tap, on **Hide tracks**, or on a swipe to the next
+  card. One card expanded at a time; the stack opens collapsed. A long tracklist scrolls inside the
+  card. The release opens from the **Open release** button (in the grid a tap still opens it).
+  **Add to crate** is hidden until E4.
+- **No visible Collection title (DR-3):** `navigationTitle` is kept for VoiceOver and the back
+  button but not drawn. Crates keeps its large title.
+- **Filter = a bar above the tab bar + a sheet (E3):** iOS 26 `tabViewBottomAccessory`, iOS 18–25
+  `safeAreaInset(edge: .bottom)`. The sheet holds BPM range with presets Exact / ±3 / ±6, the
+  Camelot wheel, moods by group, genres; footer "Show N records" / "Reset". The empty-result state
+  is not drawn yet.
+- **Sort placement is OPEN (DR-8):** proposal is a Sort section inside the filter sheet.
+  `filter.sortChip` is TBD; `sort.option` stays.
+- **`Release.coverColor` (DR-2, DR-5):** see the data model.
+- Not covered by draft v0 yet: the grid in the new style, the empty filter bar, sort placement, font.
+
 ### UI testing
 
 First XCUITest is green: `testAddReleaseFromEmptyState` in `vynlUITests` passes end-to-end, proving accessibility identifiers are reachable from the test runner.
@@ -103,7 +122,10 @@ CrateItem ──< Track          + the marked tracks from that release          
 - today: `genre: String` — required
 - **v2 (DR-2):** `genre` is replaced by `genres` — many-to-many with `Genre`, at least one required
   (DR-4); `cover: Data?` (external storage, downscaled on save; no cover → a placeholder computed
-  from artist + title, never stored); `dateAdded: Date` set on insert (for "recently added" sort)
+  from artist + title, never stored); `dateAdded: Date` set on insert (for "recently added" sort);
+  `coverColor` (optional): the colour that contrasts most with the average among the colours
+  covering ≥ ~5% of the cover. Computed when a cover is saved (DR-5), cleared when it is removed;
+  placeholders derive theirs from their seed instead of storing one. Part of schema v2, same reset.
 
 ### Track — IMPLEMENTED (v1); key changes in DR-2 / DR-6
 - position: String — required (e.g. "A1", "B2")
@@ -161,10 +183,12 @@ Header, trailing: grid/stack toggle and mood gear (Collection only), contextual 
 ```
 - Each tab owns its own `NavigationStack`. **Today:** Collection is a list; the gear sits top-left;
   Crates shows a placeholder.
-- **Planned:** header actions move to the right with large section titles COLLECTION / CRATES
-  (DR-3); "+" on Crates hidden until E4 — no disabled or placeholder controls; grid / stack modes
-  replace the list, release detail opens via push with a zoom transition from the cover (DR-7);
-  sort in the filter bar (DR-8).
+- **Planned:** header actions move to the right (DR-3); Collection draws **no visible title**
+  (navigationTitle kept for VoiceOver / back), Crates keeps its large title; "+" on Crates hidden
+  until E4 — no disabled or placeholder controls; grid / stack modes replace the list (DR-7): the
+  grid opens a release on tap via push with a zoom transition from the cover, the stack expands
+  the card in place and opens the release from **Open release**; filter is a bar above the tab bar
+  plus a sheet (E3); sort placement open (DR-8).
 - The mood vocabulary is a separate screen behind the gear, not a hamburger.
 
 ### Appearance
@@ -182,6 +206,18 @@ This is critical for Appium/XCUITest automation — without stable IDs, locators
   selection.
 - Every story's AC names the identifiers of its new elements, and the same names go into the
   Design System's component notes.
+- **Planned ids from Collection draft v0 (Tech Spec v4):**
+  - kept: `collection.grid`, `collection.stack`, `collection.record` (in the stack a tap expands
+    instead of opening)
+  - new in the stack: `collection.trackList`, `collection.trackRow` (label "A2, Salt Line", value
+    = moods), `collection.hideTracksButton`, `collection.openReleaseButton`,
+    `collection.addToCrateButton` (E4)
+  - filter: `filter.bar` (label = summary, value "14 records") replaces `filter.bpmChip` /
+    `keyChip` / `moodChip` / `genreChip`, their clear buttons, `filter.resultCount` and
+    `filterSheet.closeButton`; `filterSheet.resetButton` (instead of `filter.resetButton`),
+    `filterSheet.applyButton` ("Show 14 records"), `bpmFilter.lowerThumb`, `bpmFilter.upperThumb`,
+    `bpmFilter.presetChip`, `camelot.segment`, `moodPicker.chip`, `genreFilter.chip`
+  - sort: `sort.option` stays, `filter.sortChip` TBD
 
 ### Future architectural note (do NOT build now)
 When service-style functions accumulate (saved filter presets, collection stats, export/import,

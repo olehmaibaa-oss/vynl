@@ -71,11 +71,13 @@ appium/
         │   └── steps/               step definitions (page objects only)
         │       ├── Flows.java          shared data setup (new release, add track)
         │       ├── AddReleaseSteps, ReleaseDetailSteps, TrackSteps,
-        │       ├── DeleteReleaseSteps, NavigationSteps, MoodSteps, TrackMoodSteps
+        │       ├── EditReleaseSteps, DeleteReleaseSteps, NavigationSteps,
+        │       ├── MoodSteps, TrackMoodSteps
         └── resources/
             ├── config.properties   capabilities, timeouts
             └── features/           one tag per file, e.g. -Dcucumber.filter.tags=@tracks
                 ├── add_release.feature      @add-release
+                ├── edit_release.feature     @edit-release
                 ├── release_detail.feature   @release-detail
                 ├── tracks.feature           @tracks
                 ├── delete_release.feature   @delete
@@ -240,7 +242,18 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
 - **DR-7 grid/stack (SCRUM-36)** — the widest change. `collection.list` goes; records become
   `collection.record` with label "Artist, Title" in both modes. `CollectionPage.openRelease` /
   `isReleaseVisible` move to that locator, and every scenario that creates or opens a release
-  runs through them.
+  runs through them. Per Collection draft v0 (Tech Spec v4) a tap opens the release **only in the
+  grid**; in the stack it expands the card in place, and the release opens from
+  `collection.openReleaseButton`. `-uitesting` starts in the grid, so `openRelease` stays a tap
+  there; stack scenarios need their own expand / open steps (`collection.trackList`,
+  `collection.trackRow`, `collection.hideTracksButton`).
+- **DR-3 header (SCRUM-32)** — gear moves right, ids unchanged; Crates gets no "+". The
+  Collection title is no longer drawn (navigationTitle kept), so
+  any "COLLECTION title visible" check is dropped; the Crates large title is still asserted.
+- **E3 filter** — a bar `filter.bar` (value "14 records") + sheet replaces the planned per-filter
+  chips and `filter.resultCount`. Full id list in the root CLAUDE.md.
+- **`AddReleasePage.fillRequired` / `fillRequiredExcept`** and the add/edit features are built
+  around the free-text genre; the deferred AUTO-1 / AUTO-4 genre cases are written in DR-4.
 - **DR-4 genres (SCRUM-33)** — `addRelease.genreField` → `addRelease.genreInput` + chips;
   `AddReleasePage.fillRequired` and `Flows.openNewRelease` change; release detail's genre becomes
   `releaseDetail.genreChip` instead of the `"Genre, Techno"` LabeledContent.
@@ -249,7 +262,6 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
 - **E2-S5 / E2-S6 (SCRUM-38, 39)** — moods kept as typed (`Hypnotic`, not `hypnotic`), grouped
   (`moods.group`), 30 seeds; track-form mood rows `trackForm.mood.<name>` → `trackForm.moodChip`
   by label. `mood_vocabulary.feature` and `track_moods.feature` get rewritten.
-- **DR-3 header (SCRUM-32)** — gear moves right, ids unchanged; Crates gets no "+".
 - **DR-1 dark only (SCRUM-30)** — no locator changes; the suite must stay green as-is.
 
 ---
@@ -264,6 +276,12 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
 **Add release** — required: artist, title, genre. Optional: label, year (numeric only).
 Save is disabled until all three required fields are non-empty (whitespace trimmed).
 Status defaults to `owned`; there is no status picker in add mode.
+Year (and track BPM) keep digits only; the app re-filters at save, so fast input can't persist a
+letter (SCRUM-27). Cancel discards.
+
+**Edit release** — the same form, pre-filled, plus `addRelease.statusPicker` (a
+SegmentedControl; segments are Buttons labelled "Owned" / "Sold", pick by label —
+`AddReleasePage.selectStatus`). Save returns to the release detail.
 
 **Release detail** — shows artist, title, genre, status, label, year (empty optionals render as "—").
 Tracks section lists position + title sorted by position; empty state with an add CTA when there are none.
