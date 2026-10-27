@@ -26,7 +26,7 @@ struct ReleaseDetailView: View {
             Section("Details") {
                 LabeledContent("Artist", value: release.artist)
                 LabeledContent("Title", value: release.title)
-                LabeledContent("Genre", value: release.genre)
+                LabeledContent("Genre", value: release.genreNames.joined(separator: ", "))
                 LabeledContent("Status", value: release.status == .owned ? "Owned" : "Sold")
                 LabeledContent("Label", value: release.label ?? "—")
                 LabeledContent("Year", value: release.year.map { String($0) } ?? "—")
@@ -126,7 +126,7 @@ struct ReleaseDetailView: View {
 
     /// A track's moods, A–Z, comma-separated. Empty when it has none.
     private func moodLine(for track: Track) -> String {
-        track.moods.map(\.name).sorted().joined(separator: ", ")
+        track.moods.sortedByName().map(\.name).joined(separator: ", ")
     }
 
     private func deleteTracks(at offsets: IndexSet) {

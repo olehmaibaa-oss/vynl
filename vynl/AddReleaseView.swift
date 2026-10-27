@@ -91,7 +91,7 @@ struct AddReleaseView: View {
                 if case .edit(let release) = mode {
                     artist = release.artist
                     title = release.title
-                    genre = release.genre
+                    genre = release.genreNames.joined(separator: ", ")
                     label = release.label ?? ""
                     yearText = release.year.map { String($0) } ?? ""
                     status = release.status
@@ -108,21 +108,24 @@ struct AddReleaseView: View {
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
         let trimmedGenre = genre.trimmingCharacters(in: .whitespaces)
         let trimmedLabel = label.trimmingCharacters(in: .whitespaces)
+        // One text field until DR-4 brings genre chips: comma-separated, matched
+        // case-insensitively to genres that already exist (first spelling kept).
+        let genres = (try? GenreVocabulary.resolve(list: trimmedGenre, in: modelContext)) ?? []
 
         switch mode {
         case .add:
             let release = Release(
                 artist: trimmedArtist,
                 title: trimmedTitle,
-                genre: trimmedGenre,
                 label: trimmedLabel.isEmpty ? nil : trimmedLabel,
                 year: year
             )
             modelContext.insert(release)
+            release.genres = genres
         case .edit(let release):
             release.artist = trimmedArtist
             release.title = trimmedTitle
-            release.genre = trimmedGenre
+            release.genres = genres
             release.label = trimmedLabel.isEmpty ? nil : trimmedLabel
             release.year = year
             release.status = status

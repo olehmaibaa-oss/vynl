@@ -2,7 +2,7 @@
 //  MoodFormView.swift
 //  vynl
 //
-//  Add or rename a mood. Names are normalised (trimmed, lowercased) and must be
+//  Add or rename a mood. Names are kept as typed, only trimmed (DR-2), and must be
 //  unique within the vocabulary — compared case-insensitively.
 //
 
@@ -34,7 +34,8 @@ struct MoodFormView: View {
 
     @State private var name = ""
 
-    private var normalized: String { MoodTag.normalize(name) }
+    /// Trimmed, case kept (DR-2).
+    private var normalized: String { MoodTag.clean(name) }
 
     private var isDuplicate: Bool {
         guard !normalized.isEmpty else { return false }
@@ -86,7 +87,7 @@ struct MoodFormView: View {
         guard canSave else { return }
         switch target {
         case .add:
-            modelContext.insert(MoodTag(name: normalized))
+            modelContext.insert(MoodTag(name: normalized, group: MoodVocabulary.defaultGroupForNewMoods))
         case .rename(let mood):
             mood.name = normalized
         }

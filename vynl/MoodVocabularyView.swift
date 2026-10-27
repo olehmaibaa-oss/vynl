@@ -11,7 +11,9 @@ import SwiftData
 
 struct MoodVocabularyView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \MoodTag.name) private var moods: [MoodTag]
+    @Query private var allMoods: [MoodTag]
+    /// A–Z ignoring case; names are stored as typed (DR-2).
+    private var moods: [MoodTag] { allMoods.sortedByName() }
 
     @State private var formTarget: MoodFormTarget?
 

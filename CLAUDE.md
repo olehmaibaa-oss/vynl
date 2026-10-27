@@ -49,13 +49,13 @@ All six stories shipped:
 - **S4** — Track rows on the release detail show their moods (A–Z) under the title. The row's
   accessibility label stays `"A1, Magneze"`; the moods are its accessibility value.
 
-### Design refresh (SCRUM-28 → epic SCRUM-29): PLANNED
+### Design refresh (SCRUM-28 → epic SCRUM-29): IN PROGRESS
 
 The 27 Oct design kickoff changed the MVP: grid + covers move into it, a stack mode, multiple
 genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tech Spec (27.10
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
-E2-S5 / E2-S6 (SCRUM-38, 39). **DR-1 (dark only, Design System colours) is built**, in review;
-the rest is not — see the data model below for what is "today" vs "planned".
+E2-S5 / E2-S6 (SCRUM-38, 39). **DR-1 (dark only, Design System colours) is done; DR-2 (schema
+v2) is built**, in review; the rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -104,55 +104,63 @@ and in which story. Do not build a planned change outside its story.
 
 ```
 Release ──< Track            a release has many tracks
-Release >──< Genre           many-to-many (the collection's genre vocabulary)   [planned DR-2]
+Release >──< Genre           many-to-many (the collection's genre vocabulary)
 Track >──< MoodTag           many-to-many (fixed vocabulary)
 Crate ──< CrateItem          a crate has many items                              [E4]
 CrateItem → Release          an item references one release                      [E4]
 CrateItem ──< Track          + the marked tracks from that release               [E4]
 ```
 
-### Release — IMPLEMENTED (v1); v2 planned in DR-2 (SCRUM-31)
+Schema **v2** is built (DR-2, SCRUM-31): `AppSchema.version = 2`, models Release, Track, MoodTag,
+Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for each field.
+
+### Release — IMPLEMENTED (v2)
 - artist: String — required
 - title: String — required
 - label: String? — optional
 - year: Int? — optional
-- status: ReleaseStatus — default .owned, changed in the edit form. **Stays** in v2; it is only
-  dropped from the E3 filter.
+- status: ReleaseStatus — default .owned, changed in the edit form. Not an E3 filter.
+- `genres: [Genre]` — many-to-many, inverse + nullify declared on `Genre.releases`. "At least one"
+  is enforced by the form (DR-4). `genreNames` gives them A–Z.
+- `cover: Data?` — `@Attribute(.externalStorage)`; nil → a placeholder computed from artist +
+  title, never stored. Picked and downscaled in DR-5.
+- `coverColor: String?` — `"#RRGGBB"`: the colour that contrasts most with the average among the
+  colours covering ≥ ~5% of the cover. Computed when a cover is saved (DR-5), cleared when it is
+  removed; placeholders derive theirs from their seed and store nothing.
+- `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
-- today: `genre: String` — required
-- **v2 (DR-2):** `genre` is replaced by `genres` — many-to-many with `Genre`, at least one required
-  (DR-4); `cover: Data?` (external storage, downscaled on save; no cover → a placeholder computed
-  from artist + title, never stored); `dateAdded: Date` set on insert (for "recently added" sort);
-  `coverColor` (optional): the colour that contrasts most with the average among the colours
-  covering ≥ ~5% of the cover. Computed when a cover is saved (DR-5), cleared when it is removed;
-  placeholders derive theirs from their seed instead of storing one. Part of schema v2, same reset.
 
-### Track — IMPLEMENTED (v1); key changes in DR-2 / DR-6
+### Track — IMPLEMENTED (v2); the wheel comes in DR-6
 - position: String — required (e.g. "A1", "B2")
 - title: String — required
 - bpm: Int? — optional
 - to-one back to its Release
 - many-to-many to MoodTag (`moods`)
-- today: `key: String?` — free text
-- **v2 (DR-2, DR-6):** `key` is a Camelot position, one of 24 values 1A–12B; the classic name (Am,
-  F#) is derived, never stored; displayed as `8A · Am`; picked on a Camelot wheel
+- key: `CamelotKey?` (24 cases 1A–12B), stored as its code in `keyCode: String?` so E3 can use it in
+  a predicate; always go through `track.key`. Classic name derived (`classicName`, "Am"), shown as
+  `display` ("8A · Am"). Until DR-6 the track form keeps a text field that accepts a code or a
+  classic name (`CamelotKey(parsing:)`); anything else saves no key.
 
-### MoodTag — IMPLEMENTED (v1, E2-S1); v2 planned in DR-2 / E2-S5 (SCRUM-38)
-- name: String — unique case-insensitively, enforced by `MoodVocabulary.isNameTaken`, deliberately
-  NOT `@Attribute(.unique)` (unique makes SwiftData upsert on collision, silently merging a rename)
+### MoodTag — IMPLEMENTED (v2); screen and 30 seeds in E2-S5 (SCRUM-38)
+- name: String — stored **as typed**, only trimmed (`MoodTag.clean`; v1 lowercased). Unique
+  case-insensitively via `MoodVocabulary.isNameTaken`, deliberately NOT `@Attribute(.unique)`
+  (unique makes SwiftData upsert on collision, silently merging a rename). Lists sort A–Z ignoring
+  case (`sortedByName()`), not with `@Query(sort:)`.
+- group: `MoodGroup` (Dark & Driving, Bright & Emotional, Atmospheric, Groovy, Dub, in that order),
+  stored as `groupName: String`; go through `mood.group`.
 - many-to-many with Track, nullify both ways
 - seeded once per store, tracked by a UserDefaults flag (deleting every mood doesn't reseed)
-- today: names stored lowercase; 8 seeded moods, flat
-- **v2:** names stored **as typed** (only trimmed), uniqueness still case-insensitive;
-  `group` — one of Dark & Driving, Bright & Emotional, Atmospheric, Groovy, Dub;
-  seeded vocabulary = the PRD list, 30 moods in those 5 groups (Industrial in Dark & Driving,
-  Dubby in its own Dub group)
+- today: still the 8 v1 seeds in their v1 lowercase spelling, now with their PRD group (Industrial
+  in Dark & Driving, Dubby in Dub, Deep / Atmospheric in Atmospheric). A mood added on the
+  vocabulary screen goes to `MoodVocabulary.defaultGroupForNewMoods` until E2-S5 adds the group
+  picker. **E2-S5:** the PRD's 30 moods in PRD spelling, grouped screen.
 
-### Genre — PLANNED (DR-2, DR-4)
+### Genre — IMPLEMENTED (v2); form in DR-4
 - name: String — unique case-insensitively, the **first spelling is kept** ("dub techno" never
-  creates a second "Dub Techno")
-- many-to-many with Release, nullify both ways
-- the release form suggests genres that already exist; E3 filters by them
+  creates a second "Dub Techno"): always create through `GenreVocabulary.findOrCreate`
+- many-to-many with Release, nullify both ways (deleting a release keeps its genres)
+- until DR-4 the release form has one text field, read as a comma-separated list
+  (`GenreVocabulary.resolve(list:)`); DR-4 brings chips with suggestions from existing genres
 
 ### Crate — LATER (E4)
 - name: String — required (e.g. "Friday, [club]")
@@ -165,8 +173,15 @@ CrateItem ──< Track          + the marked tracks from that release          
 - guarantees integrity: marked tracks are physically tied to their release, no orphans
 
 ### Data migrations (Tech Spec §4)
-- **Now (no real data yet):** a schema change resets the store. DR-2 implements that reset
-  explicitly and logged — it must not become a catch-all that would swallow a real migration bug.
+- **Now (no real data yet):** a schema change resets the store. `StoreReset` (DR-2) does it,
+  keyed on an explicit version: `AppSchema.version` vs `storeSchemaVersion` in UserDefaults (a
+  store with no recorded version is v1). Different → delete the store files (+ `-wal`, `-shm`,
+  the external-storage folder), clear the mood "seeded" flag, log it (`dev.vynl` / `store`). A
+  container that fails to open for any other reason still crashes (`fatalError`), so a real bug
+  isn't swallowed. **Any model change: bump `AppSchema.version`.** Store path:
+  `AppSchema.storeURL` (Application Support/default.store). `-uitesting` is in-memory, no reset.
+  Checked on the simulator with a real v1 store: v2 resets it and starts with the seeded moods;
+  the same store without the reset does not open.
 - **From the first build that holds a real collection:** `VersionedSchema` + `SchemaMigrationPlan`,
   every schema change a new version with a migration. The reset goes away then.
 

@@ -259,10 +259,13 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
   `releaseDetail.genreChip` instead of the `"Genre, Techno"` LabeledContent.
 - **DR-6 Camelot key (SCRUM-35)** — free-text `trackForm.keyField` → `trackForm.keyButton` +
   `camelot.segment`; `TrackFormPage.setKey` becomes a picker.
-- **E2-S5 / E2-S6 (SCRUM-38, 39)** — moods kept as typed (`Hypnotic`, not `hypnotic`), grouped
+- **DR-2 schema v2 (SCRUM-31), built** — mood names are stored as typed since DR-2: a mood added
+  as `"  Acid "` reads `Acid` (only that scenario changed). Seeds keep their v1 lowercase spelling
+  until E2-S5. Track key is a Camelot code now: the key field takes "8A" or "Am" and shows the code.
+- **E2-S5 / E2-S6 (SCRUM-38, 39)** — seeds in PRD spelling (`Hypnotic`, not `hypnotic`), grouped
   (`moods.group`), 30 seeds; track-form mood rows `trackForm.mood.<name>` → `trackForm.moodChip`
   by label. `mood_vocabulary.feature` and `track_moods.feature` get rewritten.
-- **DR-1 dark only (SCRUM-30)** — no locator changes; the suite must stay green as-is.
+- **DR-1 dark only (SCRUM-30), done** — no locator changes; the suite stayed green as-is.
 
 ---
 

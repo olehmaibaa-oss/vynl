@@ -25,7 +25,7 @@ struct CascadeDeleteTests {
     }
 
     private func release(_ artist: String, tracks positions: [String]) -> Release {
-        let release = Release(artist: artist, title: "Title", genre: "Techno")
+        let release = Release(artist: artist, title: "Title")
         context.insert(release)
         for position in positions {
             context.insert(Track(position: position, title: "Track \(position)", release: release))

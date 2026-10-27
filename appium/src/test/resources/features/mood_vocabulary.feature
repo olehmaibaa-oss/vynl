@@ -10,11 +10,12 @@ Feature: Mood vocabulary
     Then the moods read "atmospheric, dark, deep, driving, dubby, hypnotic, industrial, minimal"
 
   # "Acid" sorts first and is typed with padding and a capital, so the one
-  # scenario proves the new mood is stored, normalised and sorted in.
+  # scenario proves the new mood is stored trimmed, case kept (DR-2: names as
+  # typed, v1 lowercased them) and sorted in A–Z ignoring case.
   Scenario: Add a mood
     Given I am on the mood vocabulary
     When I add a mood "  Acid "
-    Then the first mood is "acid"
+    Then the first mood is "Acid"
 
   # Named kinds rather than literal values: Gherkin trims table cells, so a
   # whitespace-only cell would silently become the empty case twice.

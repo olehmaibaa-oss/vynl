@@ -11,7 +11,18 @@ struct vynlApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = AppSchema.schema
         let isUITesting = CommandLine.arguments.contains("-uitesting")
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isUITesting)
+        let modelConfiguration: ModelConfiguration
+
+        if isUITesting {
+            modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        } else {
+            // Schema changed since this store was written → reset it (Tech Spec §4).
+            StoreReset.resetIfSchemaChanged(storeURL: AppSchema.storeURL, flags: .standard,
+                                            currentVersion: AppSchema.version)
+            try? FileManager.default.createDirectory(at: URL.applicationSupportDirectory,
+                                                     withIntermediateDirectories: true)
+            modelConfiguration = ModelConfiguration(schema: schema, url: AppSchema.storeURL)
+        }
 
         do {
             let container = try ModelContainer(for: schema, configurations: [modelConfiguration])

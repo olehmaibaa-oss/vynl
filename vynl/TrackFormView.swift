@@ -24,7 +24,8 @@ struct TrackFormView: View {
     /// Held in form state and written only on Save, so Cancel never leaks a change.
     @State private var selectedMoods: Set<PersistentIdentifier> = []
 
-    @Query(sort: \MoodTag.name) private var vocabulary: [MoodTag]
+    @Query private var allMoods: [MoodTag]
+    private var vocabulary: [MoodTag] { allMoods.sortedByName() }
 
     private var isSaveEnabled: Bool {
         !position.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -89,7 +90,7 @@ struct TrackFormView: View {
                     position = track.position
                     title = track.title
                     bpmText = track.bpm.map { String($0) } ?? ""
-                    key = track.key ?? ""
+                    key = track.key?.code ?? ""
                     selectedMoods = Set(track.moods.map(\.persistentModelID))
                 }
             }
@@ -99,7 +100,9 @@ struct TrackFormView: View {
     private func save() {
         let trimmedPosition = position.trimmingCharacters(in: .whitespaces)
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
-        let trimmedKey = key.trimmingCharacters(in: .whitespaces)
+        // Free text until DR-6 brings the Camelot wheel: a code ("8A") or a classic
+        // name ("Am") is stored as its Camelot code; anything else saves no key.
+        let camelotKey = CamelotKey(parsing: key)
         // Re-filter at save time: the onChange filter can miss a keystroke under
         // fast input, and Int("12b3") would silently drop the bpm (SCRUM-27).
         let bpm = Int(bpmText.filter(\.isNumber))
@@ -110,7 +113,7 @@ struct TrackFormView: View {
                 position: trimmedPosition,
                 title: trimmedTitle,
                 bpm: bpm,
-                key: trimmedKey.isEmpty ? nil : trimmedKey,
+                key: camelotKey,
                 release: release
             )
             modelContext.insert(track)
@@ -119,7 +122,7 @@ struct TrackFormView: View {
             track.position = trimmedPosition
             track.title = trimmedTitle
             track.bpm = bpm
-            track.key = trimmedKey.isEmpty ? nil : trimmedKey
+            track.key = camelotKey
             track.moods = chosenMoods
         }
 

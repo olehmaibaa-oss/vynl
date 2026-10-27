@@ -2,7 +2,7 @@
 //  MoodTagTests.swift
 //  vynlTests
 //
-//  E2-S1 (SCRUM-20): MoodTag model, many-to-many with Track, seeded vocabulary.
+//  E2-S1 (SCRUM-20), updated in DR-2 (SCRUM-31): MoodTag model, many-to-many with Track, seeded vocabulary.
 //  Each test gets its own in-memory store and its own UserDefaults suite, so the
 //  "seeded" flag never leaks between tests or from the host app.
 //
@@ -45,7 +45,7 @@ struct MoodTagTests {
 
     @Test func freshStoreGetsTheDefaultVocabulary() throws {
         try MoodVocabulary.seedIfNeeded(in: context, flags: flags)
-        #expect(try moodNames() == MoodVocabulary.defaults.sorted())
+        #expect(try moodNames() == MoodVocabulary.defaults.map(\.name).sorted())
     }
 
     @Test func seedingTwiceCreatesNoDuplicates() throws {
@@ -76,18 +76,48 @@ struct MoodTagTests {
 
     // MARK: - Names
 
-    @Test func namesAreStoredTrimmedAndLowercased() {
-        #expect(MoodTag(name: "  Hypnotic \n").name == "hypnotic")
+    // DR-2: v1 lowercased names; v2 keeps them as typed, only trimmed.
+    @Test func namesAreStoredAsTypedAndTrimmed() {
+        #expect(MoodTag(name: "  Spacey / Cosmic \n", group: .atmospheric).name == "Spacey / Cosmic")
+    }
+
+    @Test func nameTakenIgnoresCaseBothWays() throws {
+        context.insert(MoodTag(name: "Hypnotic", group: .darkAndDriving))
+        #expect(try MoodVocabulary.isNameTaken("hypnotic", in: context))
+        #expect(try MoodVocabulary.isNameTaken("HYPNOTIC", in: context))
+    }
+
+    // MARK: - Groups
+
+    @Test func aMoodKeepsItsGroup() throws {
+        let acid = MoodTag(name: "Acid", group: .groovy)
+        context.insert(acid)
+        try context.save()
+        let fetched = try #require(try context.fetch(FetchDescriptor<MoodTag>()).first)
+        #expect(fetched.group == .groovy)
+        #expect(fetched.groupName == "Groovy")
+    }
+
+    @Test func seededMoodsSitInTheirPRDGroups() throws {
+        try MoodVocabulary.seedIfNeeded(in: context, flags: flags)
+        #expect(try mood("industrial").group == .darkAndDriving)
+        #expect(try mood("dubby").group == .dub)
+        #expect(try mood("deep").group == .atmospheric)
+    }
+
+    @Test func groupsAreTheFiveFromTheSpecInOrder() {
+        #expect(MoodGroup.allCases.map(\.rawValue)
+                == ["Dark & Driving", "Bright & Emotional", "Atmospheric", "Groovy", "Dub"])
     }
 
     @Test func nameTakenIsCaseAndWhitespaceInsensitive() throws {
-        context.insert(MoodTag(name: "hypnotic"))
+        context.insert(MoodTag(name: "hypnotic", group: .darkAndDriving))
         #expect(try MoodVocabulary.isNameTaken("Hypnotic ", in: context))
         #expect(try !MoodVocabulary.isNameTaken("tribal", in: context))
     }
 
     @Test func aMoodDoesNotCollideWithItselfWhenRenamed() throws {
-        let dubby = MoodTag(name: "dubby")
+        let dubby = MoodTag(name: "dubby", group: .darkAndDriving)
         context.insert(dubby)
         #expect(try !MoodVocabulary.isNameTaken("Dubby", in: context, excluding: dubby))
     }
@@ -95,7 +125,7 @@ struct MoodTagTests {
     // MARK: - Relationships
 
     @Test func trackAndMoodAreManyToMany() throws {
-        let deep = MoodTag(name: "deep"), dark = MoodTag(name: "dark")
+        let deep = MoodTag(name: "deep", group: .darkAndDriving), dark = MoodTag(name: "dark", group: .darkAndDriving)
         context.insert(deep); context.insert(dark)
         let a1 = track("A1", moods: [deep, dark])
         let a2 = track("A2", moods: [deep])
@@ -108,7 +138,7 @@ struct MoodTagTests {
     }
 
     @Test func deletingAMoodKeepsTheTrack() throws {
-        let dark = MoodTag(name: "dark")
+        let dark = MoodTag(name: "dark", group: .darkAndDriving)
         context.insert(dark)
         let a1 = track("A1", moods: [dark])
         try context.save()
@@ -122,7 +152,7 @@ struct MoodTagTests {
     }
 
     @Test func deletingATrackKeepsTheMood() throws {
-        let dark = MoodTag(name: "dark")
+        let dark = MoodTag(name: "dark", group: .darkAndDriving)
         context.insert(dark)
         let a1 = track("A1", moods: [dark])
         try context.save()
