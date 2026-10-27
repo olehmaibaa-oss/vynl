@@ -49,6 +49,14 @@ All six stories shipped:
 - **S4** — Track rows on the release detail show their moods (A–Z) under the title. The row's
   accessibility label stays `"A1, Magneze"`; the moods are its accessibility value.
 
+### Design refresh (SCRUM-28 → epic SCRUM-29): PLANNED
+
+The 27 Oct design kickoff changed the MVP: grid + covers move into it, a stack mode, multiple
+genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tech Spec (27.10
+changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
+E2-S5 / E2-S6 (SCRUM-38, 39). None of it is built yet — see the data model below for what is
+"today" vs "planned".
+
 ### UI testing
 
 First XCUITest is green: `testAddReleaseFromEmptyState` in `vynlUITests` passes end-to-end, proving accessibility identifiers are reachable from the test runner.
@@ -71,55 +79,74 @@ First XCUITest is green: `testAddReleaseFromEmptyState` in `vynlUITests` passes 
 
 ## Full data model (the WHOLE picture — for awareness, not for building all at once)
 
-Five entities total. **Release, Track and MoodTag are implemented.** Crate and CrateItem come in E4.
-This whole model is documented here so that when you build an early entity, you don't design
-something that will have to be broken later.
+Source of truth: Tech Spec §2 (Confluence), updated after the 27 Oct design kickoff (SCRUM-28).
+Six entities. Each one below is marked with what is **in the code today** and what is **planned**
+and in which story. Do not build a planned change outside its story.
 
 ```
 Release ──< Track            a release has many tracks
+Release >──< Genre           many-to-many (the collection's genre vocabulary)   [planned DR-2]
 Track >──< MoodTag           many-to-many (fixed vocabulary)
-Crate ──< CrateItem          a crate has many items
-CrateItem → Release          an item references one release
-CrateItem ──< Track          + the marked tracks from that release
+Crate ──< CrateItem          a crate has many items                              [E4]
+CrateItem → Release          an item references one release                      [E4]
+CrateItem ──< Track          + the marked tracks from that release               [E4]
 ```
 
-### Release — (IMPLEMENTED)
+### Release — IMPLEMENTED (v1); v2 planned in DR-2 (SCRUM-31)
 - artist: String — required
 - title: String — required
 - label: String? — optional
 - year: Int? — optional
-- genre: String — required
-- status: ReleaseStatus — default .owned
-- one-to-many relationship to Track, **cascade delete** (deleting a Release deletes its Tracks)
+- status: ReleaseStatus — default .owned, changed in the edit form. **Stays** in v2; it is only
+  dropped from the E3 filter.
+- one-to-many to Track, **cascade delete**
+- today: `genre: String` — required
+- **v2 (DR-2):** `genre` is replaced by `genres` — many-to-many with `Genre`, at least one required
+  (DR-4); `cover: Data?` (external storage, downscaled on save; no cover → a placeholder computed
+  from artist + title, never stored); `dateAdded: Date` set on insert (for "recently added" sort)
 
-### Track — (IMPLEMENTED)
+### Track — IMPLEMENTED (v1); key changes in DR-2 / DR-6
 - position: String — required (e.g. "A1", "B2")
 - title: String — required
 - bpm: Int? — optional
-- key: String? — optional (e.g. "Am", "8A") — free text in MVP, no Camelot picker
-- to-one relationship back to its Release
-- many-to-many relationship to MoodTag (`moods`) — IMPLEMENTED (E2)
+- to-one back to its Release
+- many-to-many to MoodTag (`moods`)
+- today: `key: String?` — free text
+- **v2 (DR-2, DR-6):** `key` is a Camelot position, one of 24 values 1A–12B; the classic name (Am,
+  F#) is derived, never stored; displayed as `8A · Am`; picked on a Camelot wheel
 
-### MoodTag  — (IMPLEMENTED, E2)
-- name: String (e.g. "hypnotic", "driving", "atmospheric")
-- A **fixed vocabulary**: moods are created once and reused. Modelled as a separate entity
-  (not a free-text array) so filters stay clean. Many-to-many with Track.
-- Names stored trimmed + lowercased. Uniqueness is enforced by `MoodVocabulary.isNameTaken`,
-  deliberately NOT `@Attribute(.unique)`: unique makes SwiftData upsert on collision, which would
-  silently merge a rename into an existing mood.
-- Seeded with defaults once per store (hypnotic, driving, atmospheric, deep, dark, minimal,
-  dubby, industrial), tracked by a UserDefaults flag so deleting every mood doesn't reseed.
+### MoodTag — IMPLEMENTED (v1, E2-S1); v2 planned in DR-2 / E2-S5 (SCRUM-38)
+- name: String — unique case-insensitively, enforced by `MoodVocabulary.isNameTaken`, deliberately
+  NOT `@Attribute(.unique)` (unique makes SwiftData upsert on collision, silently merging a rename)
+- many-to-many with Track, nullify both ways
+- seeded once per store, tracked by a UserDefaults flag (deleting every mood doesn't reseed)
+- today: names stored lowercase; 8 seeded moods, flat
+- **v2:** names stored **as typed** (only trimmed), uniqueness still case-insensitive;
+  `group` — one of Dark & Driving, Bright & Emotional, Atmospheric, Groovy, Dub;
+  seeded vocabulary = the PRD list, 30 moods in those 5 groups (Industrial in Dark & Driving,
+  Dubby in its own Dub group)
 
-### Crate — (LATER, epic E4)
-- name: String (e.g. "Friday, [club]")
+### Genre — PLANNED (DR-2, DR-4)
+- name: String — unique case-insensitively, the **first spelling is kept** ("dub techno" never
+  creates a second "Dub Techno")
+- many-to-many with Release, nullify both ways
+- the release form suggests genres that already exist; E3 filters by them
+
+### Crate — LATER (E4)
+- name: String — required (e.g. "Friday, [club]")
 - date: Date? — optional
-- one-to-many relationship to CrateItem
+- one-to-many to CrateItem
+- can be created by importing (a copy of) another crate, whole or selected records
 
-### CrateItem — (LATER, epic E4)
-- references one Release
-- has a set of marked Tracks from that release
-- This intermediate entity guarantees integrity: marked tracks are physically tied to their
-  release inside the CrateItem, so there can be no orphaned track.
+### CrateItem — LATER (E4)
+- references one Release; holds the set of marked Tracks from that release
+- guarantees integrity: marked tracks are physically tied to their release, no orphans
+
+### Data migrations (Tech Spec §4)
+- **Now (no real data yet):** a schema change resets the store. DR-2 implements that reset
+  explicitly and logged — it must not become a catch-all that would swallow a real migration bug.
+- **From the first build that holds a real collection:** `VersionedSchema` + `SchemaMigrationPlan`,
+  every schema change a new version with a migration. The reset goes away then.
 
 ---
 
@@ -127,44 +154,57 @@ CrateItem ──< Track          + the marked tracks from that release
 
 ### Navigation
 ```
-TabView (bottom)
-├── "Collection" tab  → stack: list → release detail → track detail
-├── "Crates" tab      → stack: crate list → crate → crate item   (LATER, E4)
-└── A gear/settings button → mood vocabulary management           (LATER, E2)
+TabView (bottom, native: Liquid Glass on iOS 26, classic bar on 18–25; no search tab)
+├── "Collection" tab → one screen, grid / stack modes → release detail → track
+└── "Crates" tab     → crate list → crate → crate item                     (content in E4)
+Header, trailing: grid/stack toggle and mood gear (Collection only), contextual "+"
 ```
-- TabView for the two equal zones (Collection / Crates).
-- Stack navigation (push/pop) lives inside each tab for drilling into detail.
-- Both tabs exist; Crates shows a placeholder until E4. The gear on Collection opens the mood
-  vocabulary (E2).
+- Each tab owns its own `NavigationStack`. **Today:** Collection is a list; the gear sits top-left;
+  Crates shows a placeholder.
+- **Planned:** header actions move to the right with large section titles COLLECTION / CRATES
+  (DR-3); "+" on Crates hidden until E4 — no disabled or placeholder controls; grid / stack modes
+  replace the list, release detail opens via push with a zoom transition from the cover (DR-7);
+  sort in the filter bar (DR-8).
+- The mood vocabulary is a separate screen behind the gear, not a hamburger.
+
+### Appearance
+- **Dark only** (planned DR-1, SCRUM-30): dark appearance forced once at the root, colours from the
+  Design System's colour sets. No hard-coded colours in views. Today the app follows the system.
 
 ### Accessibility identifiers — PROJECT-WIDE RULE
 Every interactive element gets an `.accessibilityIdentifier(...)` from the very start.
-This is critical for Appium/XCUITest automation later — without stable IDs, locators are fragile.
-Use clear, stable, descriptive identifiers (e.g. "collection.addReleaseButton",
-"release.artistField", "release.saveButton"). Do this on every screen, every story, no exceptions.
+This is critical for Appium/XCUITest automation — without stable IDs, locators are fragile.
+- Naming: `screen.element` (e.g. `collection.addReleaseButton`, `trackForm.saveButton`).
+- A repeated element shares ONE id and is told apart by its label (`releaseDetail.trackRow` with
+  label "A1, Magneze"; planned `collection.record` with label "Artist, Title").
+- Selected state (chips, segments, sort options, the stack's current card, marked tracks) is
+  exposed as the **Selected** trait. A filter match is a value ("match" / "no match"), not a
+  selection.
+- Every story's AC names the identifiers of its new elements, and the same names go into the
+  Design System's component notes.
 
 ### Future architectural note (do NOT build now)
 When service-style functions accumulate (saved filter presets, collection stats, export/import,
 settings), they will move into a side drawer / hamburger (Instagram style), keeping tabs clean.
-Premature in the skeleton.
+Premature in the MVP.
 
 ---
 
 ## Scope
 
-### MVP skeleton (build this first, in order)
-1. Add / edit / delete a release (release + tracks)
-2. Collection — **list view only**
-3. Mood tags + filter
-4. Crate — checkbox mode (create crate, tick records; inside a crate show marked tracks with positions)
-5. Everything local, offline
+### MVP (changed by the design kickoff, SCRUM-28)
+1. Add / edit / delete a release (release + tracks), **with a cover** (camera or library; generated
+   placeholder when there is none), several genres, Camelot key on tracks
+2. Collection: **grid with covers + stack mode**, filter and sort on one screen
+3. Mood tags (grouped vocabulary) + filter by BPM, key, mood, genre
+4. Crate — checkbox mode (create, tick records; inside a crate show marked tracks with positions)
+5. Everything local, offline, dark only
 
-### Post-MVP (NOT in the skeleton — do not build unless explicitly asked)
+### Post-MVP (NOT in the MVP — do not build unless explicitly asked)
 - Track preview (manual YouTube link → local audio fallback → nothing)
-- Grid view + cover artwork
+- Discogs import (cover, tracklist) with a local cache
 - Card-based crate ("drawer / dossier" swipe-through of records)
 - Folders / collection organisation
-- Discogs API (auto-fetch tracklists)
 - AI: mood auto-tagging, natural-language search, set-curation assistant, AI preview search
 - CloudKit sync
 - Hamburger / side drawer for service functions
@@ -173,10 +213,20 @@ Premature in the skeleton.
 
 ## Epics (high level)
 
-- **E1 — Collection management:** add/edit/delete release; release contains tracks; browse as a list. (COMPLETE)
-- **E2 — Mood tags:** assign mood tags to tracks; a track can have several moods. (BUILT, in review)
-- **E3 — Search & filtering:** filter the collection by mood, BPM, genre, status; results at track level.
-- **E4 — Crate:** create a crate; add releases (checkboxes); mark tracks to play; view crate with tracks and positions.
+- **E1 — Collection management:** add/edit/delete release; release contains tracks. (v1 COMPLETE;
+  redesign delta in DR)
+- **E2 — Mood tags:** assign mood tags to tracks; a track can have several moods. (v1 built and in
+  review; grouped vocabulary in E2-S5 / E2-S6)
+- **DR — Design refresh (SCRUM-29):** the delta from the design kickoff — dark only, schema v2,
+  header, genres, covers, Camelot key, grid/stack, sort. Order: DR-1 → DR-2 → (DR-3…DR-6,
+  E2-S5 → E2-S6) → DR-7 → DR-8.
+- **E3 — Search & filtering:** filter by BPM range, key, mood, genre (status is not a filter).
+  Result = records with at least one matching track; matching tracks highlighted, "N of M" on the
+  record. Track conditions (BPM, key, mood) must match within the same track; genre filters the
+  release. One filter shared by grid and stack, kept when switching.
+- **E4 — Crate:** create (from scratch or by importing a copy of another crate); add releases from
+  the collection or from inside the crate; tracks matching the active filter are marked
+  automatically; mark tracks to play; marked / all toggle; counts of records and tracks.
 
 E1 is the foundation. E2, E3, E4 depend on it.
 

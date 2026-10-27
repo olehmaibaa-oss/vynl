@@ -232,6 +232,28 @@ These are set in the Swift code and are the contract between app and tests. Matc
 
 ---
 
+## Coming: design refresh (epic SCRUM-29) — what it will break
+
+Not built yet. Each story's "Automation impact" section in Jira is the detail; the short version,
+so nothing here gets "fixed" in the wrong direction before its story lands:
+
+- **DR-7 grid/stack (SCRUM-36)** — the widest change. `collection.list` goes; records become
+  `collection.record` with label "Artist, Title" in both modes. `CollectionPage.openRelease` /
+  `isReleaseVisible` move to that locator, and every scenario that creates or opens a release
+  runs through them.
+- **DR-4 genres (SCRUM-33)** — `addRelease.genreField` → `addRelease.genreInput` + chips;
+  `AddReleasePage.fillRequired` and `Flows.openNewRelease` change; release detail's genre becomes
+  `releaseDetail.genreChip` instead of the `"Genre, Techno"` LabeledContent.
+- **DR-6 Camelot key (SCRUM-35)** — free-text `trackForm.keyField` → `trackForm.keyButton` +
+  `camelot.segment`; `TrackFormPage.setKey` becomes a picker.
+- **E2-S5 / E2-S6 (SCRUM-38, 39)** — moods kept as typed (`Hypnotic`, not `hypnotic`), grouped
+  (`moods.group`), 30 seeds; track-form mood rows `trackForm.mood.<name>` → `trackForm.moodChip`
+  by label. `mood_vocabulary.feature` and `track_moods.feature` get rewritten.
+- **DR-3 header (SCRUM-32)** — gear moves right, ids unchanged; Crates gets no "+".
+- **DR-1 dark only (SCRUM-30)** — no locator changes; the suite must stay green as-is.
+
+---
+
 ## App behaviour the tests rely on
 
 **Collection**
