@@ -161,13 +161,38 @@ E1 is the foundation. E2, E3, E4 depend on it.
 
 ---
 
+## Workflow
+
+Work is tracked in Jira, project `SCRUM` (vynl.atlassian.net). The Confluence space `vynldev`
+holds the PRD, the Tech Spec, and a Ways of Working page.
+
+How a story reaches you:
+
+1. **Requirements are settled with the human first** — what the feature is, and what it is not.
+2. **A story is written in Jira** with its acceptance criteria as Gherkin scenarios. The AC is
+   the definition of done and the direct source for test cases later.
+3. **A plan is produced before code.** Describe what you will change and why; the human reviews
+   the plan. This is the cheap moment to catch a wrong approach.
+4. **Code.** Build only that story.
+5. **Review against the AC**, scenario by scenario, not "looks fine".
+
+`To Do → In Progress → In QA → Done`. Only the human moves a ticket to `Done`.
+
+**Gherkin AC is a contract with the test suite.** The Appium framework in `appium/` mirrors
+these scenarios rather than inventing its own. If an AC describes behaviour you did not build,
+that divergence surfaces later as a test that cannot pass — flag it while implementing instead
+of leaving it for the suite to discover.
+
+---
+
 ## Testing
 
 - **UI tests** live in the `vynlUITests` target using XCUITest (`XCUIApplication`).
 - **Pattern established:** `field.tap()` → `field.typeText(...)` → assert on `app.staticTexts["value"].waitForExistence(timeout:)`. Release row text is a `StaticText` element in XCUITest.
 - **Test isolation:** pass `-uitesting` as a launch argument; `vynlApp` switches SwiftData to an in-memory store, giving each run a clean database.
 - **Accessibility identifiers** are set on every interactive element from day one — this is what makes tests stable. See architecture note above.
-- **Next planned:** Appium + WebdriverIO (ported framework), then `xcodebuild test` CLI runs, then CI integration.
+- **Appium framework:** lives in `appium/` in this repo and has its own CLAUDE.md — Java 21 / Maven / Appium XCUITest driver / Cucumber / JUnit 5. It drives the app on the Simulator through the same accessibility identifiers, with page objects in `appium/src/main` and scenarios plus glue in `appium/src/test`. It is the main UI suite going forward; `vynlUITests` stays as the XCUITest sanity check.
+- **Next planned:** a one-command run (boot simulator, start Appium, `mvn test`), then CI on a macOS runner.
 - **Acceptance criteria** for each story are written as Gherkin scenarios and serve as the direct source for test cases.
 
 ---
