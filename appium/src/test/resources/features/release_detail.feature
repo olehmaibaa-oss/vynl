@@ -1,3 +1,4 @@
+@release-detail
 Feature: Release detail
 
   Scenario: Release detail shows the entered values

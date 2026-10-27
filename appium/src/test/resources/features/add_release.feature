@@ -1,3 +1,4 @@
+@add-release
 Feature: Add release
 
   Scenario: Add a release from empty state
