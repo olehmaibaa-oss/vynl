@@ -54,23 +54,43 @@ appium/
     │   ├── config/Config.java      config.properties + -D overrides
     │   ├── driver/DriverManager.java  ThreadLocal driver holder
     │   └── pages/
-    │       ├── BasePage.java       explicit waits, find/tap/type, label predicate
-    │       ├── CollectionPage.java collection screen
+    │       ├── BasePage.java       explicit waits, tap/type/clearAndType, label predicate,
+    │       │                       isButtonEnabled, swipeToDelete, labelsOf, scrollToAndTap
+    │       ├── TabBar.java         tab bar component (Collection / Crates)
+    │       ├── CollectionPage.java collection screen (+ gear → moods)
     │       ├── AddReleasePage.java add-release form (also the edit form)
-    │       └── ReleaseDetailPage.java  release detail screen
+    │       ├── ReleaseDetailPage.java  release detail: fields, track rows, delete alert
+    │       ├── TrackFormPage.java  add / edit track sheet, mood toggles
+    │       ├── MoodVocabularyPage.java  mood vocabulary list
+    │       ├── MoodFormPage.java   add / rename mood sheet
+    │       └── CratesPage.java     Crates tab (placeholder until E4)
     └── test/
         ├── java/vynl/             ← the tests
         │   ├── RunCucumberTest.java   JUnit suite entry point
         │   ├── hooks/Hooks.java       @Before/@After — driver lifecycle
         │   └── steps/               step definitions (page objects only)
-        │       ├── AddReleaseSteps.java
-        │       └── ReleaseDetailSteps.java
+        │       ├── Flows.java          shared data setup (new release, add track)
+        │       ├── AddReleaseSteps, ReleaseDetailSteps, TrackSteps,
+        │       ├── DeleteReleaseSteps, NavigationSteps, MoodSteps, TrackMoodSteps
         └── resources/
             ├── config.properties   capabilities, timeouts
-            └── features/
-                ├── add_release.feature
-                └── release_detail.feature
+            └── features/           one tag per file, e.g. -Dcucumber.filter.tags=@tracks
+                ├── add_release.feature      @add-release
+                ├── release_detail.feature   @release-detail
+                ├── tracks.feature           @tracks
+                ├── delete_release.feature   @delete
+                ├── navigation.feature       @navigation
+                ├── mood_vocabulary.feature  @moods
+                └── track_moods.feature      @track-moods
 ```
+
+Run one area: `mvn test -Dtest=RunCucumberTest -Dcucumber.filter.tags=@moods -Dwda.useNewWDA=false`.
+`-Dtest=RunCucumberTest` matters: without it surefire also runs the Cucumber engine directly and
+every scenario executes twice.
+
+**Model-level behaviour lives in `vynlTests` (Swift Testing), not here.** Cascade delete and the
+mood model are proven there because the UI can't observe them (orphaned tracks render nowhere).
+Run with `xcodebuild test -scheme vynl -only-testing:vynlTests`.
 
 **Gherkin gotcha:** `/` is the alternation operator in Cucumber Expressions. A step like
 `a release {string} / {string} exists` must escape it (`\\/` in the Java annotation) — otherwise
@@ -95,15 +115,14 @@ Page objects take the driver through the constructor and get it from `DriverMana
 require touching every page object. Steps instantiate page objects lazily inside each
 step rather than as fields, so they never depend on glue-instantiation order vs `@Before`.
 
-`ReleaseDetailPage` and `TrackFormPage` don't exist yet — there are no scenarios for
-them, and empty page objects rot.
+Page objects are added when a scenario needs them, not before — empty page objects rot.
 
 **There is no implicit wait.** Every lookup in `BasePage` waits explicitly. Do not add
 `implicitlyWait` back: mixing the two makes timings unpredictable, because the implicit
 wait applies inside each polling attempt of the explicit one.
 
-**Still a young framework.** Remaining gaps (see "Roadmap"): one scenario, no gesture or
-screenshot helpers, no retry logic, no reporting, no CI.
+Remaining gaps (see "Roadmap"): no screenshot-on-failure, no retry logic, no reporting, no
+one-command run, no CI.
 
 ---
 
@@ -141,7 +160,12 @@ be turned off once things are stable, to speed runs up.
 
 These are set in the Swift code and are the contract between app and tests. Match them exactly.
 
+**Tab bar** — no identifiers on tab items; locate by label inside the tab bar ("Collection",
+"Crates"). A selected item reports `value="1"`. See `TabBar`.
+- `crates.placeholder` — Crates tab content until E4
+
 **Collection screen**
+- `collection.moodsButton` — gear in the toolbar, pushes the mood vocabulary
 - `collection.list` — the releases list
 - `collection.releaseRow` — a single release row
 - `collection.addReleaseButton` — empty-state "Add Release" CTA
@@ -155,7 +179,9 @@ These are set in the Swift code and are the contract between app and tests. Matc
 
 **Release detail screen**
 - `releaseDetail.view` — the detail container
-- `releaseDetail.trackRow` — a single track row
+- `releaseDetail.trackRow` — a track row. **label** = `"A1, Magneze"` (position, title — stable
+  identity), **value** = its moods `"deep, hypnotic"` (empty when none)
+- `releaseDetail.trackMoods` — the mood line inside a row (only rendered when it has moods)
 - `releaseDetail.addTrackButton` — empty-state add-track CTA
 - `releaseDetail.toolbarAddTrackButton` — toolbar "+"
 - `releaseDetail.editButton`
@@ -166,6 +192,14 @@ These are set in the Swift code and are the contract between app and tests. Matc
 - `trackForm.positionField`, `trackForm.titleField` (required)
 - `trackForm.bpmField`, `trackForm.keyField` (optional)
 - `trackForm.saveButton`, `trackForm.cancelButton`
+- `trackForm.moodsSection` — the Moods header
+- `trackForm.mood.<name>` — one toggle per mood, e.g. `trackForm.mood.hypnotic`; selected rows
+  carry the Selected trait (`selected=true`, `value="1"`)
+
+**Mood vocabulary**
+- `moods.list`, `moods.row` (label = mood name), `moods.addButton`
+- `moodForm.nameField`, `moodForm.saveButton`, `moodForm.cancelButton`
+- `moodForm.duplicateError` — shown when the name is taken
 
 ### Element-type notes (learned from actual runs)
 - Release row **text** resolves as `StaticText` in XCUITest — asserting on the artist/title text is
@@ -184,6 +218,14 @@ These are set in the Swift code and are the contract between app and tests. Matc
   holds the body only. Do not use index-based locators to disambiguate.
 - `releaseDetail.view` is a `CollectionView`; nested lookups inside it work
   (`ExpectedConditions.visibilityOfNestedElementsLocatedBy`).
+- **iOS 26 toolbar buttons appear twice**: an `XCUIElementTypeOther` wrapper with the same
+  identifier (always `enabled=true`) and the `XCUIElementTypeButton` inside (truthful). Lookup by
+  id returns the wrapper. Read enabled state with `BasePage.isButtonEnabled`; tapping either works.
+- **Rows below the keyboard aren't "displayed"**, so `elementToBeClickable` never succeeds for
+  them. `BasePage.scrollToAndTap` waits for presence and lets XCUITest's tap scroll the row in.
+  `mobile: scroll toVisible` does not work inside a SwiftUI `Form`.
+- Swipe-to-delete: `mobile: swipe` left on the row, then tap the system `Delete` action (label
+  match — system swipe actions carry no identifier of ours). `BasePage.swipeToDelete`.
 - When a new screen's assertions are being written, dump the page source once
   (`GET /session/<id>/source`) rather than guessing how SwiftUI exposes a control. The two notes
   above both came out of a dump and contradicted a reasonable-looking guess.
@@ -225,7 +267,9 @@ before it exists to make that agent possible and trustworthy.
    visibility or clickability, with a short separate budget for negative checks.
 3. ~~**Config extraction**~~ — DONE. `config.properties` + `Config.java`, `-D` overrides,
    `ios.udid=auto` resolves the booted simulator.
-4. **More coverage, written by hand** — the remaining Gherkin scenarios already carried as
+4. **More coverage, written by hand** — MOSTLY DONE: release detail, tracks, delete, navigation,
+   mood vocabulary, track moods (33 scenarios). Still open: AUTO-1 (add-release validation) and
+   AUTO-4 (edit release). Originally: the remaining Gherkin scenarios already carried as
    acceptance criteria in Jira (validation, edit, cascade delete, swipe-delete). Four or
    five scenarios covering different interaction shapes (form, list, alert, swipe) are
    not just coverage: they are the corpus the agent later extrapolates its conventions

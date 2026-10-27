@@ -34,6 +34,21 @@ All six stories shipped:
 - **S5** — Add/edit tracks: `TrackFormView` with `TrackFormMode` enum (`.add(release:)` / `.edit(track:)`), BPM numeric filter, SwiftData insert and in-place mutation.
 - **S6** — Edit/delete release: `AddReleaseView` refactored to `ReleaseFormMode` enum (`.add` / `.edit(release:)`); status `Picker` in edit mode only; delete release with `.alert` confirmation + cascade; swipe-to-delete on individual tracks.
 
+### Navigation shell (NAV-1): DONE
+
+`ContentView` is a `TabView` with two tabs, Collection and Crates, each with its own
+`NavigationStack`. Crates shows a placeholder until E4.
+
+### E2 — Mood tags: BUILT (S1–S4 in review)
+
+- **S1** — `MoodTag` model, many-to-many with `Track` (nullify both ways), default vocabulary
+  seeded once (`MoodVocabulary`), `AppSchema` as the single list of models.
+- **S2** — Mood vocabulary screen behind the gear on Collection: list A–Z, add, rename, delete;
+  empty and duplicate names rejected (case/whitespace-insensitive).
+- **S3** — Moods section in the track form: toggle rows, saved only on Save.
+- **S4** — Track rows on the release detail show their moods (A–Z) under the title. The row's
+  accessibility label stays `"A1, Magneze"`; the moods are its accessibility value.
+
 ### UI testing
 
 First XCUITest is green: `testAddReleaseFromEmptyState` in `vynlUITests` passes end-to-end, proving accessibility identifiers are reachable from the test runner.
@@ -56,7 +71,7 @@ First XCUITest is green: `testAddReleaseFromEmptyState` in `vynlUITests` passes 
 
 ## Full data model (the WHOLE picture — for awareness, not for building all at once)
 
-Five entities total. **Release and Track are implemented.** MoodTag, Crate, and CrateItem come in later epics.
+Five entities total. **Release, Track and MoodTag are implemented.** Crate and CrateItem come in E4.
 This whole model is documented here so that when you build an early entity, you don't design
 something that will have to be broken later.
 
@@ -83,12 +98,17 @@ CrateItem ──< Track          + the marked tracks from that release
 - bpm: Int? — optional
 - key: String? — optional (e.g. "Am", "8A") — free text in MVP, no Camelot picker
 - to-one relationship back to its Release
-- (LATER) many-to-many relationship to MoodTag
+- many-to-many relationship to MoodTag (`moods`) — IMPLEMENTED (E2)
 
-### MoodTag  — (LATER, epic E2)
+### MoodTag  — (IMPLEMENTED, E2)
 - name: String (e.g. "hypnotic", "driving", "atmospheric")
 - A **fixed vocabulary**: moods are created once and reused. Modelled as a separate entity
   (not a free-text array) so filters stay clean. Many-to-many with Track.
+- Names stored trimmed + lowercased. Uniqueness is enforced by `MoodVocabulary.isNameTaken`,
+  deliberately NOT `@Attribute(.unique)`: unique makes SwiftData upsert on collision, which would
+  silently merge a rename into an existing mood.
+- Seeded with defaults once per store (hypnotic, driving, atmospheric, deep, dark, minimal,
+  dubby, industrial), tracked by a UserDefaults flag so deleting every mood doesn't reseed.
 
 ### Crate — (LATER, epic E4)
 - name: String (e.g. "Friday, [club]")
@@ -114,7 +134,8 @@ TabView (bottom)
 ```
 - TabView for the two equal zones (Collection / Crates).
 - Stack navigation (push/pop) lives inside each tab for drilling into detail.
-- In the MVP skeleton only the Collection tab is real. Crates and settings come later.
+- Both tabs exist; Crates shows a placeholder until E4. The gear on Collection opens the mood
+  vocabulary (E2).
 
 ### Accessibility identifiers — PROJECT-WIDE RULE
 Every interactive element gets an `.accessibilityIdentifier(...)` from the very start.
@@ -153,7 +174,7 @@ Premature in the skeleton.
 ## Epics (high level)
 
 - **E1 — Collection management:** add/edit/delete release; release contains tracks; browse as a list. (COMPLETE)
-- **E2 — Mood tags:** assign mood tags to tracks; a track can have several moods. (CURRENT)
+- **E2 — Mood tags:** assign mood tags to tracks; a track can have several moods. (BUILT, in review)
 - **E3 — Search & filtering:** filter the collection by mood, BPM, genre, status; results at track level.
 - **E4 — Crate:** create a crate; add releases (checkboxes); mark tracks to play; view crate with tracks and positions.
 
@@ -187,6 +208,8 @@ of leaving it for the suite to discover.
 
 ## Testing
 
+- **Unit tests** live in `vynlTests` (Swift Testing): model-level rules the UI can't observe —
+  cascade delete, the mood model, seeding. `xcodebuild test -scheme vynl -only-testing:vynlTests`.
 - **UI tests** live in the `vynlUITests` target using XCUITest (`XCUIApplication`).
 - **Pattern established:** `field.tap()` → `field.typeText(...)` → assert on `app.staticTexts["value"].waitForExistence(timeout:)`. Release row text is a `StaticText` element in XCUITest.
 - **Test isolation:** pass `-uitesting` as a launch argument; `vynlApp` switches SwiftData to an in-memory store, giving each run a clean database.
