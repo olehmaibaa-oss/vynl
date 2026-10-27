@@ -54,11 +54,12 @@ struct MoodFormView: View {
                 } footer: {
                     if isDuplicate {
                         Text("\"\(normalized)\" already exists.")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Palette.danger)
                             .accessibilityIdentifier("moodForm.duplicateError")
                     }
                 }
             }
+            .screenBackground()
             .navigationTitle(target.mood == nil ? "Add Mood" : "Rename Mood")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

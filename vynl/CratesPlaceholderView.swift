@@ -17,6 +17,7 @@ struct CratesPlaceholderView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("crates.placeholder")
+        .fillBackground()
     }
 }
 

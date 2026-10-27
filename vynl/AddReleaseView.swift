@@ -69,6 +69,7 @@ struct AddReleaseView: View {
                     }
                 }
             }
+            .screenBackground()
             .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

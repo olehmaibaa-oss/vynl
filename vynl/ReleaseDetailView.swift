@@ -48,16 +48,16 @@ struct ReleaseDetailView: View {
                             HStack(alignment: .firstTextBaseline) {
                                 Text(track.position)
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Palette.inkMuted)
                                     .frame(minWidth: 32, alignment: .leading)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(track.title)
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle(Palette.ink)
                                     let moods = moodLine(for: track)
                                     if !moods.isEmpty {
                                         Text(moods)
                                             .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(Palette.inkMuted)
                                             .accessibilityIdentifier("releaseDetail.trackMoods")
                                     }
                                 }
@@ -78,9 +78,11 @@ struct ReleaseDetailView: View {
                 Button("Delete Release", role: .destructive) {
                     showDeleteConfirmation = true
                 }
+                .foregroundStyle(Palette.danger)
                 .accessibilityIdentifier("releaseDetail.deleteButton")
             }
         }
+        .screenBackground()
         .accessibilityIdentifier("releaseDetail.view")
         .navigationTitle(release.title)
         .navigationBarTitleDisplayMode(.inline)

@@ -14,10 +14,10 @@ struct ReleaseRowView: View {
                 .font(.headline)
             Text(release.title)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Palette.inkMuted)
             Text(release.status == .owned ? "Owned" : "Sold")
                 .font(.caption)
-                .foregroundStyle(release.status == .owned ? Color.green : Color.secondary)
+                .foregroundStyle(release.status == .owned ? Palette.ink : Palette.inkDim)
         }
         .padding(.vertical, 2)
         .accessibilityIdentifier("collection.releaseRow")

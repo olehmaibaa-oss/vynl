@@ -51,10 +51,13 @@ struct CollectionView: View {
         } description: {
             Text("Add your first record to start building your collection.")
         } actions: {
+            // Primary button = inversion: ink fill (the tint), bg text.
             Button("Add Release") { showAddRelease = true }
                 .buttonStyle(.borderedProminent)
+                .foregroundStyle(Palette.onInvert)
                 .accessibilityIdentifier("collection.addReleaseButton")
         }
+        .fillBackground()
     }
 
     private var list: some View {
@@ -63,6 +66,7 @@ struct CollectionView: View {
                 ReleaseRowView(release: release)
             }
         }
+        .screenBackground()
         .accessibilityIdentifier("collection.list")
     }
 }

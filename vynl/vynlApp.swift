@@ -29,6 +29,9 @@ struct vynlApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // Dark only (DR-1): forced once here, so sheets and alerts follow.
+                .preferredColorScheme(.dark)
+                .tint(Palette.ink)
         }
         .modelContainer(sharedModelContainer)
     }

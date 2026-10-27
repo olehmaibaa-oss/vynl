@@ -22,12 +22,13 @@ struct MoodVocabularyView: View {
                     formTarget = .rename(mood)
                 } label: {
                     Text(mood.name)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(Palette.ink)
                 }
                 .accessibilityIdentifier("moods.row")
             }
             .onDelete(perform: deleteMoods)
         }
+        .screenBackground()
         .accessibilityIdentifier("moods.list")
         .overlay {
             if moods.isEmpty {

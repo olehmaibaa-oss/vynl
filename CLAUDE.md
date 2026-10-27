@@ -54,8 +54,8 @@ All six stories shipped:
 The 27 Oct design kickoff changed the MVP: grid + covers move into it, a stack mode, multiple
 genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tech Spec (27.10
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
-E2-S5 / E2-S6 (SCRUM-38, 39). None of it is built yet — see the data model below for what is
-"today" vs "planned".
+E2-S5 / E2-S6 (SCRUM-38, 39). **DR-1 (dark only, Design System colours) is built**, in review;
+the rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -192,8 +192,18 @@ Header, trailing: grid/stack toggle and mood gear (Collection only), contextual 
 - The mood vocabulary is a separate screen behind the gear, not a hamburger.
 
 ### Appearance
-- **Dark only** (planned DR-1, SCRUM-30): dark appearance forced once at the root, colours from the
-  Design System's colour sets. No hard-coded colours in views. Today the app follows the system.
+- **Dark only** (DR-1, SCRUM-30, built): `.preferredColorScheme(.dark)` and `.tint(Palette.ink)`
+  once at the root in `vynlApp`; sheets and alerts follow.
+- **Colours** come from the Design System (Claude Design "VYNL",
+  https://claude.ai/artifact/1xL56ScQVjdMTG49ipTmdg, `tokens.json`): one Color Set per token in
+  `Assets.xcassets/DesignSystem`, named exactly as the token, reached through `Palette`
+  (`Palette.ink`, `Palette.inkMuted`, `Palette.key("8A")`…). **No literal colours in views**
+  (`.red`, `.secondary`, `Color.green` are all gone). `PaletteTests` fails if a token's set is
+  missing. AccentColor = ink: VYNL has no accent, selection is shown by inversion
+  (`invert` fill + `on-invert` text).
+- Screens sit on `bg` via `.screenBackground()` (List / Form) or `.fillBackground()` (empty
+  states). List and Form rows still use the system's dark grouped cell colour, and system alerts
+  keep the system red on destructive buttons; the screens get redrawn in DR-3 / DR-7 anyway.
 
 ### Accessibility identifiers — PROJECT-WIDE RULE
 Every interactive element gets an `.accessibilityIdentifier(...)` from the very start.

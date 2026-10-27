@@ -66,6 +66,7 @@ struct TrackFormView: View {
                         .accessibilityIdentifier("trackForm.moodsSection")
                 }
             }
+            .screenBackground()
             .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -145,11 +146,11 @@ struct TrackFormView: View {
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(Palette.ink)
                 }
             }
         }
-        .foregroundStyle(.primary)
+        .foregroundStyle(Palette.ink)
         .accessibilityIdentifier("trackForm.mood.\(mood.name)")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
