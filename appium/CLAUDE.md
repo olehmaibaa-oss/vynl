@@ -87,6 +87,7 @@ appium/
                 ├── delete_release.feature   @delete
                 ├── navigation.feature       @navigation
                 ├── collection_modes.feature @collection-modes
+                ├── sort.feature             @sort
                 ├── mood_vocabulary.feature  @moods
                 └── track_moods.feature      @track-moods
 ```
@@ -179,6 +180,10 @@ These are set in the Swift code and are the contract between app and tests. Matc
   one is Selected and its value is "N tracks". The stack loops from 5 records, so the same label
   can exist twice: stack lookups take the Selected one
 - `collection.expandedRecord` — the expanded sleeve (tap collapses)
+- `filter.bar` — above the tab bar, label "All records", value "14 records, Artist A–Z"; opens the
+  filter sheet
+- `sort.option` — filter sheet, label = option name, Selected on the current one;
+  `filterSheet.applyButton` applies (a swipe down discards)
 - `collection.hideTracksButton`, `collection.trackList`, `collection.trackRow` (label "A1, Title"),
   `collection.openReleaseButton` — expanded stack card
 - `collection.addReleaseButton` — empty-state "Add Release" CTA
@@ -265,6 +270,10 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
   "I relaunch the app keeping the mode" = `terminateApp` + `mobile: launchApp` with
   `-uitesting -uitesting-keepMode` (the store is in memory, so the app comes back empty).
   `collection_modes.feature` (@collection-modes).
+- **DR-8 sort (SCRUM-37), built** — `CollectionPage.openFilterSheet / pickSort / applyFilter /
+  dismissFilterSheet / selectedSort / filterBarValue / recordOrder` (grid labels in order).
+  "the collection holds, in this order:" adds rows top to bottom (the last is the most recently
+  added), with an optional year. `sort.feature` (@sort).
 - **DR-3 header (SCRUM-32), built** — gear moved right next to "+", ids unchanged
   (`CollectionPage.areHeaderActionsOnTheRight` checks both Buttons are past mid-screen). Collection
   draws no title; Crates' "CRATES" is a header StaticText in the content (`CratesPage.showsTitle`),

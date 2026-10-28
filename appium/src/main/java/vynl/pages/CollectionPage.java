@@ -240,4 +240,61 @@ public class CollectionPage extends BasePage {
         tap(OPEN_RELEASE_BUTTON);
         return new ReleaseDetailPage(driver);
     }
+
+    // MARK: - Filter bar and sort (DR-8)
+
+    private static final String FILTER_BAR = "filter.bar";
+    private static final String SORT_OPTION = "sort.option";
+    private static final String APPLY_BUTTON = "filterSheet.applyButton";
+
+    private static By sortOption(String name) {
+        return AppiumBy.iOSNsPredicateString(
+                "name == '" + SORT_OPTION + "' AND label == '" + name + "'");
+    }
+
+    /** The bar's value, e.g. "14 records, Artist A–Z". */
+    public String filterBarValue() {
+        return findVisible(FILTER_BAR).getAttribute("value");
+    }
+
+    public CollectionPage openFilterSheet() {
+        tap(FILTER_BAR);
+        findVisible(APPLY_BUTTON);
+        return this;
+    }
+
+    public CollectionPage pickSort(String name) {
+        waitFor(ExpectedConditions.elementToBeClickable(sortOption(name))).click();
+        return this;
+    }
+
+    public CollectionPage applyFilter() {
+        tap(APPLY_BUTTON);
+        isGone(byId(APPLY_BUTTON), Config.elementTimeout());
+        return this;
+    }
+
+    /** Closes the sheet the way a user does without applying: a swipe down. */
+    public CollectionPage dismissFilterSheet() {
+        org.openqa.selenium.Rectangle r = find(APPLY_BUTTON).getRect();
+        int screenHeight = driver.manage().window().getSize().getHeight();
+        int x = r.getX() + r.getWidth() / 2;
+        int top = r.getY() - 160;
+        driver.executeScript("mobile: dragFromToForDuration", Map.of(
+                "duration", 0.2, "fromX", x, "fromY", top, "toX", x, "toY", screenHeight - 20));
+        isGone(byId(APPLY_BUTTON), Config.elementTimeout());
+        return this;
+    }
+
+    /** Label of the sort option carrying the Selected trait. */
+    public String selectedSort() {
+        return waitFor(ExpectedConditions.presenceOfElementLocated(AppiumBy.iOSNsPredicateString(
+                "name == '" + SORT_OPTION + "' AND selected == 1"))).getAttribute("label");
+    }
+
+    /** "Artist, Title" of every record in on-screen order (grid). */
+    public List<String> recordOrder() {
+        findVisible(GRID);
+        return labelsOf(RECORD);
+    }
 }

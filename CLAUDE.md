@@ -57,7 +57,7 @@ changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 
 E2-S5 / E2-S6 (SCRUM-38, 39). **Done: DR-1 (dark only), DR-2 (schema v2). Built, in review:
 DR-3 (header), DR-4 (genre chips), DR-6 (Camelot wheel), E2-S5 (grouped vocabulary, 30 moods),
 E2-S6 (grouped mood chips in the track form), DR-5 (covers, redrawn release screen), DR-7 (grid /
-stack).** The rest is not — see the data model below for what is "today" vs "planned".
+stack), DR-8 (sort).** The rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -234,7 +234,14 @@ Header, trailing: grid/stack toggle and mood gear (Collection only), contextual 
   colour, "N TRACKS" plaque on the current card. A tap on the current card expands it
   (`ExpandedRecordView`): sleeve up-left, disc out right, label · year, genres, Hide tracks,
   tracklist, Open release. The expanded sleeve is a tap gesture, not a Button, so a swipe that
-  starts on it moves to the next record. Filter (E3) and sort (DR-8) are not built.
+  starts on it moves to the next record.
+- **Sort (DR-8, built):** `RecordSort` (artist A–Z default / Z–A, title, year oldest first with
+  no-year last, recently added = `dateAdded` newest first; ties fall back to artist then title),
+  `@AppStorage("collectionSort")`, reset to A–Z on `-uitesting` launches. Entry point (PO 28.10):
+  `FilterBar` above the tab bar (two lines: "All records", "N RECORDS · ARTIST A–Z") opens
+  `FilterSheet`, whose only section today is Sort; the choice applies on Apply, a swipe down
+  discards it. A new sort restarts the stack from its first record. The rest of the bar and sheet
+  (filters, reset) is E3. (Named `RecordSort`, not `SortOrder`: Foundation has a `SortOrder`.)
   `ReleaseRowView` is gone.
 - The mood vocabulary is a separate screen behind the gear, not a hamburger.
 

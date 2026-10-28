@@ -7,6 +7,8 @@
 //  launches reset it to grid so tests are deterministic, unless
 //  `-uitesting-keepMode` is passed (the "mode is remembered" relaunch).
 //  The release opens with a zoom transition from its sleeve in either mode.
+//  DR-8 (SCRUM-37): both modes follow the sort chosen in the filter sheet
+//  (`collectionSort`, artist A–Z by default), reached from the filter bar.
 //
 
 import SwiftUI
@@ -19,22 +21,39 @@ enum CollectionMode: String {
 }
 
 struct CollectionView: View {
-    @Query(sort: \Release.artist) private var releases: [Release]
+    @Query private var releases: [Release]
     @State private var showAddRelease = false
+    @State private var showFilter = false
+    @AppStorage(RecordSort.storageKey) private var sortRaw = RecordSort.default.rawValue
     @AppStorage(CollectionMode.storageKey) private var modeRaw = CollectionMode.grid.rawValue
     @Namespace private var zoom
 
     private var mode: CollectionMode { CollectionMode(rawValue: modeRaw) ?? .grid }
+
+    private var sort: RecordSort { RecordSort(rawValue: sortRaw) ?? .default }
+    private var sortBinding: Binding<RecordSort> {
+        Binding(get: { sort }, set: { sortRaw = $0.rawValue })
+    }
 
     var body: some View {
         Group {
             if releases.isEmpty {
                 emptyState
             } else if mode == .grid {
-                CollectionGridView(releases: releases, zoom: zoom)
+                CollectionGridView(releases: sort.sorted(releases), zoom: zoom)
             } else {
-                CollectionStackView(releases: releases, zoom: zoom)
+                // A new order starts the stack again from its first record.
+                CollectionStackView(releases: sort.sorted(releases), zoom: zoom)
+                    .id(sortRaw)
             }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if !releases.isEmpty {
+                FilterBar(count: releases.count, sort: sort) { showFilter = true }
+            }
+        }
+        .sheet(isPresented: $showFilter) {
+            FilterSheet(sort: sortBinding)
         }
         .navigationDestination(for: Release.self) { release in
             ReleaseDetailView(release: release)
