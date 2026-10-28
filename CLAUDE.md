@@ -128,7 +128,9 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   title, never stored. **DR-5 built:** `CoverSlot` in the release form (live placeholder,
   PhotosPicker, camera only if `UIImagePickerController.isSourceTypeAvailable(.camera)` and not
   `-uitesting-noCamera`, Remove); `CoverArt.prepare` downscales to 1200px JPEG and computes
-  `coverColor` before Save. Placeholder = Design System Sleeve (djb2 seed of "artist—title").
+  `coverColor` before Save. Placeholder = Design System Sleeve (djb2 seed of "artist—title"):
+  bit 0 flips the ground, `(seed >> 1) % 4` picks bars / lines / diagonal / split. **No circles**
+  on a placeholder: the die-cut is the only circle (design review 28.10).
 - `coverColor: String?` — `"#RRGGBB"`: the colour that contrasts most with the average among the
   colours covering ≥ ~5% of the cover. Computed when a cover is saved (DR-5), cleared when it is
   removed; placeholders derive theirs from their seed and store nothing.
@@ -230,10 +232,13 @@ Header, trailing: grid/stack toggle and mood gear (Collection only), contextual 
   plaques, title 15 semibold + artist 13 muted; a tap pushes with a zoom transition from the
   sleeve. Stack: vertical view-aligned carousel, **one record per swipe**
   (`.viewAligned(limitBehavior: .alwaysByOne)`), 300pt sleeve, neighbours tilt / scale / darken via
-  `scrollTransition` (Reduce Motion: fade only), loops from 5 records, glow in the current label
-  colour, "N TRACKS" plaque on the current card. A tap on the current card expands it
-  (`ExpandedRecordView`): sleeve up-left, disc out right, label · year, genres, Hide tracks,
-  tracklist, Open release. The expanded sleeve is a tap gesture, not a Button, so a swipe that
+  `scrollTransition` (Reduce Motion: fade only), loops from 4 records (1–3: a plain list, no
+  repeats), glow in the current label colour, "N TRACKS" / "NO TRACKS" plaque on the current card.
+  The current record always sits in the vertical middle between the toolbar and the filter bar,
+  ends and a lone record included: content margins of half the free height, and a re-centre on
+  appear and when the free height changes (the filter bar arrives with the first record). A tap on
+  the current card expands it (`ExpandedRecordView`): sleeve up-left, disc out right, label · year,
+  genres, Hide tracks, tracklist (or a muted "No tracks yet", `collection.noTracks`), Open release. The expanded sleeve is a tap gesture, not a Button, so a swipe that
   starts on it moves to the next record.
 - **Sort (DR-8, built):** `RecordSort` (artist A–Z default / Z–A, title, year oldest first with
   no-year last, recently added = `dateAdded` newest first; ties fall back to artist then title),

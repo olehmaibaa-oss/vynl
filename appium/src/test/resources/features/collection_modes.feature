@@ -24,7 +24,8 @@ Feature: Collection grid and stack
   Scenario: Switching to stack puts the first record in the middle
     When I switch the collection to stack
     Then the collection is in stack mode
-    And the current record is "Halvorsen, Grey Room" with "0 tracks"
+    And the current record is "Halvorsen, Grey Room" with "No tracks"
+    And the current record sits in the middle
 
   Scenario: Swiping the stack moves one record at a time
     When I switch the collection to stack
@@ -47,6 +48,29 @@ Feature: Collection grid and stack
     And the expanded tracks read "A1, Track A1" and "B1, Track B1"
     When I tap Hide tracks
     Then the current record is collapsed
+
+  Scenario: An expanded record without tracks says so
+    When I switch the collection to stack
+    And I expand the current record
+    Then the expanded record shows "No tracks yet"
+
+  Scenario: The last record also sits in the middle
+    When I switch the collection to stack
+    And I swipe the stack up
+    And I swipe the stack up
+    Then the current record is "Sable Drift, Undertow"
+    And the current record sits in the middle
+
+  Scenario: Three records don't loop
+    When I switch the collection to stack
+    Then the stack holds each record once
+
+  Scenario: Four records loop
+    Given I add a release from the toolbar with artist "Aster" and title "Lines"
+    When I switch the collection to stack
+    And I swipe the stack down
+    Then the current record is "Sable Drift, Undertow"
+    And the current record sits in the middle
 
   Scenario: Tapping the expanded sleeve collapses it
     When I switch the collection to stack
@@ -73,6 +97,7 @@ Feature: Collection grid and stack
     And I add a release from the empty state with artist "Halvorsen" and title "Grey Room"
     Then the collection is in stack mode
     And the current record is "Halvorsen, Grey Room"
+    And the current record sits in the middle
 
   Scenario: Deleting the last record from the stack shows the empty state
     When I switch the collection to stack

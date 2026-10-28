@@ -177,9 +177,10 @@ These are set in the Swift code and are the contract between app and tests. Matc
 - `collection.grid` / `collection.stack` — the two modes' scroll views
 - `collection.gridModeButton` / `collection.stackModeButton` — header toggle, Selected = current mode
 - `collection.record` — a record in either mode, label "Artist, Title"; in the stack the current
-  one is Selected and its value is "N tracks". The stack loops from 5 records, so the same label
+  one is Selected and its value is "N tracks" / "No tracks". The stack loops from 4 records, so the same label
   can exist twice: stack lookups take the Selected one
 - `collection.expandedRecord` — the expanded sleeve (tap collapses)
+- `collection.noTracks` — "No tracks yet" in an expanded record without tracks
 - `filter.bar` — above the tab bar, label "All records", value "14 records, Artist A–Z"; opens the
   filter sheet
 - `sort.option` — filter sheet, label = option name, Selected on the current one;

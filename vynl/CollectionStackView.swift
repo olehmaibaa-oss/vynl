@@ -12,8 +12,10 @@
 //    place: the sleeve shrinks up-left, the record slides out right, details and
 //    the tracklist appear; "Open release" pushes the release screen. It
 //    collapses on a tap on the sleeve, Hide tracks, or a swipe to another record
-//  - loops (after the last comes the first) from 5 records up; with fewer, a
-//    looped neighbour would be the same record twice on screen
+//  - loops (after the last comes the first) from 4 records up; with 1–3 it is a
+//    plain list, else the same record would show above and below (review 28.10)
+//  - the current record always sits in the vertical centre between the toolbar
+//    and the filter bar, the first, the last and a lone one included
 //
 
 import SwiftUI
@@ -30,7 +32,7 @@ struct CollectionStackView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Virtual length of a looping carousel: the records repeated, starting in the middle.
-    private var loops: Bool { releases.count >= 5 }
+    private var loops: Bool { releases.count >= 4 }
     private var slots: Int { loops ? releases.count * 200 : releases.count }
     private var startSlot: Int { loops ? releases.count * 100 : 0 }
 
@@ -68,6 +70,7 @@ struct CollectionStackView: View {
     // MARK: - Carousel
 
     private func carousel(side: CGFloat, height: CGFloat) -> some View {
+        ScrollViewReader { proxy in
         ScrollView(.vertical, showsIndicators: false) {
             LazyVStack(spacing: 22) {
                 ForEach(0..<slots, id: \.self) { slot in
@@ -94,10 +97,20 @@ struct CollectionStackView: View {
         // One record per swipe, however hard the flick (swipe spec 28.10).
         .scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne))
         .scrollPosition(id: $current, anchor: .center)
+        // Half the free height above the first record and below the last, so
+        // view-alignment can centre every record, the ends included.
         .contentMargins(.vertical, max((height - side) / 2, 0), for: .scrollContent)
-        .defaultScrollAnchor(.center)
-        .onAppear { if current == nil { current = startSlot } }
+        .onAppear {
+            if current == nil { current = startSlot }
+            proxy.scrollTo(currentSlot, anchor: .center)
+        }
+        // The free height changes after the first layout (the filter bar comes
+        // in with the first record); the offset doesn't follow by itself.
+        .onChange(of: height) { _, _ in
+            proxy.scrollTo(currentSlot, anchor: .center)
+        }
         .accessibilityIdentifier("collection.stack")
+        }
     }
 
     private func cardView(_ release: Release, slot: Int, side: CGFloat) -> some View {
@@ -116,8 +129,7 @@ struct CollectionStackView: View {
                                            isSource: !expanded)
                     .matchedTransitionSource(id: release.persistentModelID, in: zoom)
                 if isCurrent {
-                    Plaque(text: "\(release.tracks.count) \(release.tracks.count == 1 ? "track" : "tracks")"
-                        .uppercased(), size: 12, weight: .bold)
+                    Plaque(text: Self.tracksBadge(release.tracks.count).uppercased(), size: 12, weight: .bold)
                         .monospaced()
                         .padding(8)
                         .transition(.opacity)
@@ -128,8 +140,17 @@ struct CollectionStackView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
         .accessibilityLabel("\(release.artist), \(release.title)")
-        .accessibilityValue("\(release.tracks.count) tracks")
+        .accessibilityValue(Self.tracksBadge(release.tracks.count))
         .accessibilityIdentifier("collection.record")
+    }
+
+    /// "No tracks" / "1 track" / "N tracks" (review 28.10: never "0 tracks").
+    static func tracksBadge(_ count: Int) -> String {
+        switch count {
+        case 0: "No tracks"
+        case 1: "1 track"
+        default: "\(count) tracks"
+        }
     }
 
     private var glow: some View {
@@ -220,6 +241,15 @@ struct ExpandedRecordView: View {
                 .accessibilityIdentifier("collection.hideTracksButton")
             }
 
+            if tracks.isEmpty {
+                // Tracks are added on the release screen (Open release).
+                Text("No tracks yet")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Palette.inkMuted)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(.top, 8)
+                    .accessibilityIdentifier("collection.noTracks")
+            } else {
             ScrollView {
                 LazyVStack(spacing: 2) {
                     ForEach(tracks) { track in
@@ -234,6 +264,7 @@ struct ExpandedRecordView: View {
             }
             .scrollIndicators(.hidden)
             .accessibilityIdentifier("collection.trackList")
+            }
 
             NavigationLink(value: release) {
                 Text("Open release")

@@ -159,6 +159,28 @@ public class CollectionModeSteps {
         assertEquals(record, collection().expandedRecord());
     }
 
+    @Given("I add a release from the toolbar with artist {string} and title {string}")
+    public void iAddFromTheToolbar(String artist, String title) {
+        collection().tapToolbarAdd().fillRequired(artist, title, Flows.GENRE).save();
+    }
+
+    @Then("the current record sits in the middle")
+    public void theCurrentRecordSitsInTheMiddle() {
+        int offset = collection().currentRecordOffsetFromMiddle();
+        assertTrue(Math.abs(offset) <= 8, "Current record is " + offset + "pt off the middle");
+    }
+
+    @Then("the expanded record shows {string}")
+    public void theExpandedRecordShows(String text) {
+        assertEquals(text, collection().noTracksText());
+    }
+
+    @Then("the stack holds each record once")
+    public void theStackHoldsEachRecordOnce() {
+        List<String> labels = collection().stackRecords();
+        assertEquals(labels.stream().distinct().count(), (long) labels.size(), "Repeated records: " + labels);
+    }
+
     @Then("the expanded tracks read {string} and {string}")
     public void theExpandedTracksRead(String first, String second) {
         assertEquals(List.of(first, second), collection().expandedTracks());

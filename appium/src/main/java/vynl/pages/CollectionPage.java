@@ -17,7 +17,7 @@ import java.util.Map;
  * <p>A record in either mode is a {@code collection.record} button labelled
  * "Artist, Title"; its sleeve and texts are folded into it, so lookups go by
  * that label, never by StaticText. In the stack the current record carries the
- * Selected trait; looping (5+ records) puts the same record in more than one
+ * Selected trait; looping (4+ records) puts the same record in more than one
  * slot, so stack lookups always take the selected one.
  */
 public class CollectionPage extends BasePage {
@@ -234,6 +234,32 @@ public class CollectionPage extends BasePage {
     /** Labels of the expanded record's track rows ("A1, Title"). */
     public List<String> expandedTracks() {
         return labelsOf(TRACK_ROW);
+    }
+
+    /**
+     * Vertical distance of the current record's centre from the middle of the
+     * free area between the toolbar (the mode Button's bottom) and the filter bar.
+     */
+    public int currentRecordOffsetFromMiddle() {
+        org.openqa.selenium.Rectangle card = waitFor(
+                ExpectedConditions.presenceOfElementLocated(CURRENT_RECORD)).getRect();
+        org.openqa.selenium.Rectangle toolbar = waitFor(
+                ExpectedConditions.presenceOfElementLocated(button(GRID_MODE_BUTTON))).getRect();
+        org.openqa.selenium.Rectangle bar = findVisible("filter.bar").getRect();
+        int top = toolbar.getY() + toolbar.getHeight();
+        int middle = (top + bar.getY()) / 2;
+        return card.getY() + card.getHeight() / 2 - middle;
+    }
+
+    /** Every stack record in the tree, by label (looping repeats some). */
+    public List<String> stackRecords() {
+        findVisible(STACK);
+        return labelsOf(RECORD);
+    }
+
+    /** The expanded record's empty-tracklist line. */
+    public String noTracksText() {
+        return findVisible("collection.noTracks").getAttribute("label");
     }
 
     public ReleaseDetailPage openReleaseFromStack() {
