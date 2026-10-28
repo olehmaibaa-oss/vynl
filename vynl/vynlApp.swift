@@ -15,6 +15,10 @@ struct vynlApp: App {
 
         if isUITesting {
             modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            // Tests start in grid, unless a relaunch checks that the mode is remembered.
+            if !CommandLine.arguments.contains("-uitesting-keepMode") {
+                UserDefaults.standard.set(CollectionMode.grid.rawValue, forKey: CollectionMode.storageKey)
+            }
         } else {
             // Schema changed since this store was written → reset it (Tech Spec §4).
             StoreReset.resetIfSchemaChanged(storeURL: AppSchema.storeURL, flags: .standard,

@@ -57,7 +57,7 @@ appium/
     │       ├── BasePage.java       explicit waits, tap/type/clearAndType, label predicate,
     │       │                       isButtonEnabled, swipeToDelete, labelsOf, scrollToAndTap
     │       ├── TabBar.java         tab bar component (Collection / Crates)
-    │       ├── CollectionPage.java collection screen (+ gear → moods)
+    │       ├── CollectionPage.java collection screen: grid, stack, empty state (+ gear → moods)
     │       ├── AddReleasePage.java add-release form (also the edit form)
     │       ├── ReleaseDetailPage.java  release detail: fields, track rows, delete alert
     │       ├── TrackFormPage.java  add / edit track sheet, mood toggles
@@ -86,6 +86,7 @@ appium/
                 ├── tracks.feature           @tracks
                 ├── delete_release.feature   @delete
                 ├── navigation.feature       @navigation
+                ├── collection_modes.feature @collection-modes
                 ├── mood_vocabulary.feature  @moods
                 └── track_moods.feature      @track-moods
 ```
@@ -172,8 +173,14 @@ These are set in the Swift code and are the contract between app and tests. Matc
 
 **Collection screen**
 - `collection.moodsButton` — gear in the toolbar, pushes the mood vocabulary
-- `collection.list` — the releases list
-- `collection.releaseRow` — a single release row
+- `collection.grid` / `collection.stack` — the two modes' scroll views
+- `collection.gridModeButton` / `collection.stackModeButton` — header toggle, Selected = current mode
+- `collection.record` — a record in either mode, label "Artist, Title"; in the stack the current
+  one is Selected and its value is "N tracks". The stack loops from 5 records, so the same label
+  can exist twice: stack lookups take the Selected one
+- `collection.expandedRecord` — the expanded sleeve (tap collapses)
+- `collection.hideTracksButton`, `collection.trackList`, `collection.trackRow` (label "A1, Title"),
+  `collection.openReleaseButton` — expanded stack card
 - `collection.addReleaseButton` — empty-state "Add Release" CTA
 - `collection.toolbarAddButton` — toolbar "+"
 
@@ -249,14 +256,15 @@ These are set in the Swift code and are the contract between app and tests. Matc
 Not built yet. Each story's "Automation impact" section in Jira is the detail; the short version,
 so nothing here gets "fixed" in the wrong direction before its story lands:
 
-- **DR-7 grid/stack (SCRUM-36)** — the widest change. `collection.list` goes; records become
-  `collection.record` with label "Artist, Title" in both modes. `CollectionPage.openRelease` /
-  `isReleaseVisible` move to that locator, and every scenario that creates or opens a release
-  runs through them. Per Collection draft v0 (Tech Spec v4) a tap opens the release **only in the
-  grid**; in the stack it expands the card in place, and the release opens from
-  `collection.openReleaseButton`. `-uitesting` starts in the grid, so `openRelease` stays a tap
-  there; stack scenarios need their own expand / open steps (`collection.trackList`,
-  `collection.trackRow`, `collection.hideTracksButton`).
+- **DR-7 grid/stack (SCRUM-36), built** — `collection.list` is gone; `CollectionPage.openRelease`
+  / `isReleaseVisible` / `isReleaseGone` match `collection.record` with label BEGINSWITH
+  "Artist, " (the grid; `-uitesting` always starts there). Stack: `switchToStack`,
+  `currentStackRecord` (the Selected record), `swipeStack(up|down)` (a short drag on
+  `collection.stack`, waits for the current record to change), `expandCurrent`, `hideTracks`,
+  `tapExpandedSleeve`, `swipeExpanded`, `expandedTracks`, `openReleaseFromStack`.
+  "I relaunch the app keeping the mode" = `terminateApp` + `mobile: launchApp` with
+  `-uitesting -uitesting-keepMode` (the store is in memory, so the app comes back empty).
+  `collection_modes.feature` (@collection-modes).
 - **DR-3 header (SCRUM-32), built** — gear moved right next to "+", ids unchanged
   (`CollectionPage.areHeaderActionsOnTheRight` checks both Buttons are past mid-screen). Collection
   draws no title; Crates' "CRATES" is a header StaticText in the content (`CratesPage.showsTitle`),

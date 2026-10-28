@@ -27,6 +27,7 @@ public class AddReleasePage extends BasePage {
     private static final String SAVE_BUTTON = "addRelease.saveButton";
     private static final String CANCEL_BUTTON = "addRelease.cancelButton";
     private static final String STATUS_PICKER = "addRelease.statusPicker";
+    private static final String FORM = "addRelease.form";
 
     public AddReleasePage(IOSDriver driver) {
         super(driver);
@@ -139,14 +140,24 @@ public class AddReleasePage extends BasePage {
         return !isGone(byId(CAMERA_BUTTON), Config.absenceTimeout());
     }
 
+    /**
+     * The optional fields sit below the Cover section since DR-5, so on a short
+     * screen (or with the keyboard up) they need a scroll first.
+     */
     public AddReleasePage setLabel(String label) {
-        type(LABEL_FIELD, label);
+        typeBelowFold(LABEL_FIELD, label);
         return this;
     }
 
     public AddReleasePage setYear(String year) {
-        type(YEAR_FIELD, year);
+        typeBelowFold(YEAR_FIELD, year);
         return this;
+    }
+
+    private void typeBelowFold(String fieldId, String text) {
+        org.openqa.selenium.WebElement field = scrollTo(byId(fieldId), FORM);
+        field.click();
+        field.sendKeys(text);
     }
 
     public AddReleasePage replaceTitle(String title) {

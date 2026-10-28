@@ -56,7 +56,8 @@ genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tec
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
 E2-S5 / E2-S6 (SCRUM-38, 39). **Done: DR-1 (dark only), DR-2 (schema v2). Built, in review:
 DR-3 (header), DR-4 (genre chips), DR-6 (Camelot wheel), E2-S5 (grouped vocabulary, 30 moods),
-E2-S6 (grouped mood chips in the track form), DR-5 (covers, redrawn release screen).** The rest is not — see the data model below for what is "today" vs "planned".
+E2-S6 (grouped mood chips in the track form), DR-5 (covers, redrawn release screen), DR-7 (grid /
+stack).** The rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -217,17 +218,24 @@ TabView (bottom, native: Liquid Glass on iOS 26, classic bar on 18–25; no sear
 └── "Crates" tab     → crate list → crate → crate item                     (content in E4)
 Header, trailing: grid/stack toggle and mood gear (Collection only), contextual "+"
 ```
-- Each tab owns its own `NavigationStack`. **Today:** Collection is a list; Crates shows a
-  placeholder.
+- Each tab owns its own `NavigationStack`. Crates shows a placeholder until E4.
 - **Header (DR-3, built):** Collection's actions (moods gear, "+") are one `ToolbarItemGroup` on
-  the right; the grid/stack toggle joins it in DR-7. Collection draws **no visible title**:
+  the right, after the grid/stack toggle (DR-7, a fixed `ToolbarSpacer` between the two groups on iOS 26). Collection draws **no visible title**:
   `navigationTitle("Collection")` stays (VoiceOver, the back button reads "Collection") and
   `.hiddenNavigationTitle()` blanks the bar. Crates shows the Design System `SectionTitle`
   ("CRATES", screen-title + heavy rule) as content, bar title hidden; no "+" on Crates until E4.
-- **Planned:** grid / stack modes replace the list (DR-7): the
-  grid opens a release on tap via push with a zoom transition from the cover, the stack expands
-  the card in place and opens the release from **Open release**; filter is a bar above the tab bar
-  plus a sheet (E3); sort placement open (DR-8).
+- **Grid / stack (DR-7, built):** `CollectionView` switches `CollectionGridView` /
+  `CollectionStackView`; the mode is `@AppStorage("collectionMode")` (`-uitesting` resets it to
+  grid unless `-uitesting-keepMode`). Grid: 2 columns, 16/12/24, die-cut sleeve without disc or
+  plaques, title 15 semibold + artist 13 muted; a tap pushes with a zoom transition from the
+  sleeve. Stack: vertical view-aligned carousel, **one record per swipe**
+  (`.viewAligned(limitBehavior: .alwaysByOne)`), 300pt sleeve, neighbours tilt / scale / darken via
+  `scrollTransition` (Reduce Motion: fade only), loops from 5 records, glow in the current label
+  colour, "N TRACKS" plaque on the current card. A tap on the current card expands it
+  (`ExpandedRecordView`): sleeve up-left, disc out right, label · year, genres, Hide tracks,
+  tracklist, Open release. The expanded sleeve is a tap gesture, not a Button, so a swipe that
+  starts on it moves to the next record. Filter (E3) and sort (DR-8) are not built.
+  `ReleaseRowView` is gone.
 - The mood vocabulary is a separate screen behind the gear, not a hamburger.
 
 ### Release screen (DR-5, built)
@@ -258,17 +266,18 @@ Every interactive element gets an `.accessibilityIdentifier(...)` from the very 
 This is critical for Appium/XCUITest automation — without stable IDs, locators are fragile.
 - Naming: `screen.element` (e.g. `collection.addReleaseButton`, `trackForm.saveButton`).
 - A repeated element shares ONE id and is told apart by its label (`releaseDetail.trackRow` with
-  label "A1, Magneze"; planned `collection.record` with label "Artist, Title").
+  label "A1, Magneze"; `collection.record` with label "Artist, Title").
 - Selected state (chips, segments, sort options, the stack's current card, marked tracks) is
   exposed as the **Selected** trait. A filter match is a value ("match" / "no match"), not a
   selection.
 - Every story's AC names the identifiers of its new elements, and the same names go into the
   Design System's component notes.
 - **Planned ids from Collection draft v0 (Tech Spec v4):**
-  - kept: `collection.grid`, `collection.stack`, `collection.record` (in the stack a tap expands
-    instead of opening)
-  - new in the stack: `collection.trackList`, `collection.trackRow` (label "A2, Salt Line", value
-    = moods), `collection.hideTracksButton`, `collection.openReleaseButton`,
+  - built (DR-7): `collection.grid`, `collection.stack`, `collection.record` (Selected = the
+    stack's current card, value "N tracks"), `collection.gridModeButton` /
+    `collection.stackModeButton` (Selected = current mode), `collection.expandedRecord`,
+    `collection.trackList`, `collection.trackRow` (label "A2, Salt Line", value = moods),
+    `collection.hideTracksButton`, `collection.openReleaseButton`; planned
     `collection.addToCrateButton` (E4)
   - filter: `filter.bar` (label = summary, value "14 records") replaces `filter.bpmChip` /
     `keyChip` / `moodChip` / `genreChip`, their clear buttons, `filter.resultCount` and

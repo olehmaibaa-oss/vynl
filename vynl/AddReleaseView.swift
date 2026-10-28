@@ -76,6 +76,7 @@ struct AddReleaseView: View {
                     }
                 }
             }
+            .accessibilityIdentifier("addRelease.form")
             .screenBackground()
             .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
