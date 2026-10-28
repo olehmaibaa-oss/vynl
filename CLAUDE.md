@@ -55,7 +55,7 @@ The 27 Oct design kickoff changed the MVP: grid + covers move into it, a stack m
 genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tech Spec (27.10
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
 E2-S5 / E2-S6 (SCRUM-38, 39). **Done: DR-1 (dark only), DR-2 (schema v2). Built, in review:
-DR-3 (header).** The rest is not — see the data model below for what is "today" vs "planned".
+DR-3 (header), DR-4 (genre chips).** The rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -158,9 +158,16 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
 ### Genre — IMPLEMENTED (v2); form in DR-4
 - name: String — unique case-insensitively, the **first spelling is kept** ("dub techno" never
   creates a second "Dub Techno"): always create through `GenreVocabulary.findOrCreate`
-- many-to-many with Release, nullify both ways (deleting a release keeps its genres)
-- until DR-4 the release form has one text field, read as a comma-separated list
-  (`GenreVocabulary.resolve(list:)`); DR-4 brings chips with suggestions from existing genres
+- many-to-many with Release, nullify both ways (deleting a release keeps its genres; a genre no
+  release uses any more stays in the vocabulary)
+- **Form (DR-4, built):** `GenrePicker` — chips of chosen genres (x removes), a field
+  (`addRelease.genreInput`, return adds), suggestions = existing genres containing the text
+  (`addRelease.genreSuggestion`), and `Add "…"` (`addRelease.genreAddNewButton`) only when no
+  existing genre has that name. Works on names; `GenreVocabulary.resolve(names:)` turns them into
+  models on Save, so Cancel leaves nothing behind. Typed in another case → the collection's
+  spelling. Save needs ≥ 1 genre. Detail shows `releaseDetail.genreChip`s A–Z (an HStack, not
+  LabeledContent: that merges the chips into one accessibility element).
+- Chips: `Chips.swift` (`FlowLayout`, `ChipLabel`, `.chipFrame()`), Design System chip style.
 
 ### Crate — LATER (E4)
 - name: String — required (e.g. "Friday, [club]")

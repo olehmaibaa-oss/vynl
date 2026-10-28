@@ -45,12 +45,12 @@ enum GenreVocabulary {
         return genre
     }
 
-    /// "Techno, Dub Techno" → two genres. The add form writes genres this way
-    /// until DR-4 gives it chips; blanks and repeats are dropped.
-    static func resolve(list raw: String, in context: ModelContext) throws -> [Genre] {
+    /// The form's chosen names as Genre models, existing ones reused; blanks and
+    /// repeats (in any case) are dropped.
+    static func resolve(names: [String], in context: ModelContext) throws -> [Genre] {
         var result: [Genre] = []
-        for part in raw.split(separator: ",") {
-            let name = part.trimmingCharacters(in: .whitespaces)
+        for raw in names {
+            let name = raw.trimmingCharacters(in: .whitespaces)
             guard !name.isEmpty else { continue }
             let genre = try findOrCreate(name, in: context)
             if !result.contains(where: { $0 === genre }) { result.append(genre) }

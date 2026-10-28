@@ -1,7 +1,6 @@
 @add-release
 Feature: Add release
-  SCRUM-8 / AUTO-1. The genre-required case is deferred to DR-4, which replaces
-  the free-text genre with genre chips ("at least one genre").
+  SCRUM-8 / AUTO-1. Genre is required as "at least one genre chip" since DR-4.
 
   Scenario: Add a release from empty state
     Given the app is launched
@@ -23,6 +22,7 @@ Feature: Add release
       | field  |
       | artist |
       | title  |
+      | genre  |
 
   Scenario: Cancel discards the new release
     Given the app is launched

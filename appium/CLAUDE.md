@@ -71,13 +71,14 @@ appium/
         │   └── steps/               step definitions (page objects only)
         │       ├── Flows.java          shared data setup (new release, add track)
         │       ├── AddReleaseSteps, ReleaseDetailSteps, TrackSteps,
-        │       ├── EditReleaseSteps, DeleteReleaseSteps, NavigationSteps,
+        │       ├── EditReleaseSteps, GenreSteps, DeleteReleaseSteps, NavigationSteps,
         │       ├── MoodSteps, TrackMoodSteps
         └── resources/
             ├── config.properties   capabilities, timeouts
             └── features/           one tag per file, e.g. -Dcucumber.filter.tags=@tracks
                 ├── add_release.feature      @add-release
                 ├── edit_release.feature     @edit-release
+                ├── genres.feature           @genres
                 ├── release_detail.feature   @release-detail
                 ├── tracks.feature           @tracks
                 ├── delete_release.feature   @delete
@@ -174,7 +175,10 @@ These are set in the Swift code and are the contract between app and tests. Matc
 - `collection.toolbarAddButton` — toolbar "+"
 
 **Add / edit release form**
-- `addRelease.artistField`, `addRelease.titleField`, `addRelease.genreField` (required)
+- `addRelease.artistField`, `addRelease.titleField` (required)
+- genres (≥ 1 required): `addRelease.genreInput`, `addRelease.genreChip` (label = genre),
+  `addRelease.genreRemoveButton` (label "Remove <genre>"), `addRelease.genreSuggestion` (label =
+  genre), `addRelease.genreAddNewButton`; detail: `releaseDetail.genreChip` (label = genre)
 - `addRelease.labelField`, `addRelease.yearField` (optional)
 - `addRelease.statusPicker` (edit mode only — owned/sold)
 - `addRelease.saveButton`, `addRelease.cancelButton`
@@ -253,11 +257,13 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
   the nav bar there is `visible=false`. Crates has no "+" (`CratesPage.hasNoAddButton`).
 - **E3 filter** — a bar `filter.bar` (value "14 records") + sheet replaces the planned per-filter
   chips and `filter.resultCount`. Full id list in the root CLAUDE.md.
-- **`AddReleasePage.fillRequired` / `fillRequiredExcept`** and the add/edit features are built
-  around the free-text genre; the deferred AUTO-1 / AUTO-4 genre cases are written in DR-4.
-- **DR-4 genres (SCRUM-33)** — `addRelease.genreField` → `addRelease.genreInput` + chips;
-  `AddReleasePage.fillRequired` and `Flows.openNewRelease` change; release detail's genre becomes
-  `releaseDetail.genreChip` instead of the `"Genre, Techno"` LabeledContent.
+- **DR-4 genres (SCRUM-33), built** — `AddReleasePage.fillRequired` adds the genre as a chip
+  (`addGenre`: type + "\n", waits for the chip, case-insensitive). Also `typeGenre`,
+  `tapAddNewGenre`, `chooseSuggestion`, `isSuggested`, `removeGenre` ("Remove <genre>"),
+  `genreChips`. Detail: `ReleaseDetailPage.genres()` / `showsGenre` on `releaseDetail.genreChip`
+  (the "Genre, Techno" LabeledContent is gone). `genres.feature` (@genres); AUTO-1 outline has a
+  `genre` row; AUTO-4's "clear genre" = "Removing the last genre blocks saving" in genres.feature.
+  After adding a genre the field keeps focus, so the keyboard stays up over Label/Year.
 - **DR-6 Camelot key (SCRUM-35)** — free-text `trackForm.keyField` → `trackForm.keyButton` +
   `camelot.segment`; `TrackFormPage.setKey` becomes a picker.
 - **DR-2 schema v2 (SCRUM-31), built** — mood names are stored as typed since DR-2: a mood added
@@ -277,8 +283,8 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
 - Releases listed sorted by artist A–Z; each row shows artist, title, status (Owned/Sold).
 - Tapping a row opens the release detail.
 
-**Add release** — required: artist, title, genre. Optional: label, year (numeric only).
-Save is disabled until all three required fields are non-empty (whitespace trimmed).
+**Add release** — required: artist, title (non-empty, trimmed) and at least one genre chip.
+Optional: label, year (numeric only). Save is disabled until all three are there.
 Status defaults to `owned`; there is no status picker in add mode.
 Year (and track BPM) keep digits only; the app re-filters at save, so fast input can't persist a
 letter (SCRUM-27). Cancel discards.
@@ -287,7 +293,8 @@ letter (SCRUM-27). Cancel discards.
 SegmentedControl; segments are Buttons labelled "Owned" / "Sold", pick by label —
 `AddReleasePage.selectStatus`). Save returns to the release detail.
 
-**Release detail** — shows artist, title, genre, status, label, year (empty optionals render as "—").
+**Release detail** — shows artist, title, genre chips (A–Z), status, label, year (empty optionals
+render as "—").
 Tracks section lists position + title sorted by position; empty state with an add CTA when there are none.
 
 **Tracks** — required: position (e.g. "A1"), title. Optional: bpm (numeric only), key (free text).

@@ -73,9 +73,9 @@ struct GenreTests {
         #expect(techno.releases.map(\.artist) == ["Regis"])
     }
 
-    @Test func aCommaListResolvesToDistinctGenres() throws {
+    @Test func formNamesResolveToDistinctGenres() throws {
         _ = try GenreVocabulary.findOrCreate("Techno", in: context)
-        let genres = try GenreVocabulary.resolve(list: "techno, Dub Techno, , TECHNO", in: context)
+        let genres = try GenreVocabulary.resolve(names: ["techno", "Dub Techno", " ", "TECHNO"], in: context)
 
         #expect(genres.map(\.name) == ["Techno", "Dub Techno"])
         #expect(try genreCount() == 2)

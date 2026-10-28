@@ -1,7 +1,7 @@
 @edit-release
 Feature: Edit release
-  SCRUM-11 / AUTO-4. Deferred: clearing genre (DR-4 makes genres chips) and the
-  status on the collection row (DR-7 replaces the list with grid/stack).
+  SCRUM-11 / AUTO-4. Removing the last genre is in genres.feature (DR-4).
+  Deferred: the status on the collection row (DR-7 replaces the list with grid/stack).
 
   Background:
     Given I am on a release detail screen

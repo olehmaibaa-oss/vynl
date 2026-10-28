@@ -83,7 +83,7 @@ public class ReleaseDetailSteps {
     public void iSeeTheValuesOnTheDetailScreen(String artist, String title, String genre) {
         assertTrue(detail.showsField("Artist", artist), "Artist not shown as " + artist);
         assertTrue(detail.showsField("Title", title), "Title not shown as " + title);
-        assertTrue(detail.showsField("Genre", genre), "Genre not shown as " + genre);
+        assertTrue(detail.showsGenre(genre), "Genre chip " + genre + " not shown");
     }
 
     @Then("the status is {string}")

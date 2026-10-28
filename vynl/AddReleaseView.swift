@@ -19,7 +19,7 @@ struct AddReleaseView: View {
 
     @State private var artist = ""
     @State private var title = ""
-    @State private var genre = ""
+    @State private var genreNames: [String] = []
     @State private var label = ""
     @State private var yearText = ""
     @State private var status: ReleaseStatus = .owned
@@ -27,7 +27,7 @@ struct AddReleaseView: View {
     private var isSaveEnabled: Bool {
         !artist.trimmingCharacters(in: .whitespaces).isEmpty &&
         !title.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !genre.trimmingCharacters(in: .whitespaces).isEmpty
+        !genreNames.isEmpty  // DR-4: at least one genre
     }
 
     private var navigationTitle: String {
@@ -45,8 +45,9 @@ struct AddReleaseView: View {
                         .accessibilityIdentifier("addRelease.artistField")
                     TextField("Title", text: $title)
                         .accessibilityIdentifier("addRelease.titleField")
-                    TextField("Genre", text: $genre)
-                        .accessibilityIdentifier("addRelease.genreField")
+                }
+                Section("Genres") {
+                    GenrePicker(names: $genreNames)
                 }
                 Section("Optional") {
                     TextField("Label", text: $label)
@@ -91,7 +92,7 @@ struct AddReleaseView: View {
                 if case .edit(let release) = mode {
                     artist = release.artist
                     title = release.title
-                    genre = release.genreNames.joined(separator: ", ")
+                    genreNames = release.genreNames
                     label = release.label ?? ""
                     yearText = release.year.map { String($0) } ?? ""
                     status = release.status
@@ -106,11 +107,9 @@ struct AddReleaseView: View {
         let year = Int(yearText.filter(\.isNumber))
         let trimmedArtist = artist.trimmingCharacters(in: .whitespaces)
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
-        let trimmedGenre = genre.trimmingCharacters(in: .whitespaces)
         let trimmedLabel = label.trimmingCharacters(in: .whitespaces)
-        // One text field until DR-4 brings genre chips: comma-separated, matched
-        // case-insensitively to genres that already exist (first spelling kept).
-        let genres = (try? GenreVocabulary.resolve(list: trimmedGenre, in: modelContext)) ?? []
+        // Names become Genre models only now, so Cancel never leaves new genres behind.
+        let genres = (try? GenreVocabulary.resolve(names: genreNames, in: modelContext)) ?? []
 
         switch mode {
         case .add:

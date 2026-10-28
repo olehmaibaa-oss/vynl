@@ -36,6 +36,7 @@ public class ReleaseDetailPage extends BasePage {
     private static final String CANCEL_DELETE_BUTTON = "releaseDetail.cancelDeleteButton";
     private static final String TRACK_ROW = "releaseDetail.trackRow";
     private static final String TRACK_MOODS = "releaseDetail.trackMoods";
+    private static final String GENRE_CHIP = "releaseDetail.genreChip";
 
     /** What an empty optional field renders as. */
     public static final String EMPTY_PLACEHOLDER = "—";
@@ -55,6 +56,19 @@ public class ReleaseDetailPage extends BasePage {
     public boolean showsField(String field, String value) {
         return isVisibleWithin(byId(VIEW), staticTextWithLabel(fieldLabel(field, value)),
                 Config.elementTimeout());
+    }
+
+    /** DR-4: the genre chips, in display order (A–Z). Waits for the first chip. */
+    public List<String> genres() {
+        waitFor(ExpectedConditions.visibilityOfNestedElementsLocatedBy(byId(VIEW), byId(GENRE_CHIP)));
+        return driver.findElement(byId(VIEW)).findElements(byId(GENRE_CHIP)).stream()
+                .map(e -> e.getAttribute("label"))
+                .toList();
+    }
+
+    public boolean showsGenre(String genre) {
+        return isVisibleWithin(byId(VIEW), AppiumBy.iOSNsPredicateString(
+                "name == '" + GENRE_CHIP + "' AND label == '" + genre + "'"), Config.elementTimeout());
     }
 
     /** Whether an optional field renders the empty placeholder. */

@@ -26,7 +26,23 @@ struct ReleaseDetailView: View {
             Section("Details") {
                 LabeledContent("Artist", value: release.artist)
                 LabeledContent("Title", value: release.title)
-                LabeledContent("Genre", value: release.genreNames.joined(separator: ", "))
+                // DR-4: genre chips, A–Z. Not a LabeledContent: that merges its
+                // content into one accessibility element ("Genres, Techno, Techno"),
+                // and each chip has to stay its own element.
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Genres")
+                    Spacer(minLength: 16)
+                    FlowLayout(spacing: 6) {
+                        ForEach(release.genreNames, id: \.self) { name in
+                            ChipLabel(text: name)
+                                .chipFrame()
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(name)
+                                .accessibilityIdentifier("releaseDetail.genreChip")
+                        }
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
                 LabeledContent("Status", value: release.status == .owned ? "Owned" : "Sold")
                 LabeledContent("Label", value: release.label ?? "—")
                 LabeledContent("Year", value: release.year.map { String($0) } ?? "—")
