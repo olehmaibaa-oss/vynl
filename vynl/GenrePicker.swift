@@ -52,7 +52,11 @@ struct GenrePicker: View {
             .autocorrectionDisabled()
             .focused($inputFocused)
             .submitLabel(.done)
-            .onSubmit { add(typed) }
+            .onSubmit {
+                // Return on an empty field closes the keyboard, so Label / Year
+                // are reachable; with text it adds and keeps focus for the next.
+                if typed.isEmpty { inputFocused = false } else { add(typed) }
+            }
             .accessibilityIdentifier("addRelease.genreInput")
 
         ForEach(suggestions, id: \.self) { name in

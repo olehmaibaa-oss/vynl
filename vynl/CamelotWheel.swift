@@ -82,7 +82,9 @@ struct CamelotWheel: View {
                 // 2pt separators in the sheet's surface.
                 local.stroke(Palette.surface, lineWidth: 2)
                 if isSelected {
-                    local.stroke(Palette.ink, lineWidth: 3)
+                    // Full 4pt ink outline (DS CamelotWheel), kept inside the
+                    // segment: an 8pt stroke clipped to the sector's own shape.
+                    local.stroke(Palette.ink, lineWidth: 8).clipShape(local)
                 }
                 Text(key.code)
                     .font(.system(size: 12, weight: .bold))
@@ -94,6 +96,9 @@ struct CamelotWheel: View {
             .contentShape(local)
         }
         .buttonStyle(.plain)
+        // The picked segment is drawn last, so its neighbours never paint over
+        // its outline (design review 28.10).
+        .zIndex(isSelected ? 1 : 0)
         // Each segment is its own element with its own frame (the sector's box),
         // and taps land on the sector's middle, not the box's.
         .position(x: box.midX, y: box.midY)

@@ -52,18 +52,14 @@ struct CollectionView: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No releases yet", systemImage: "opticaldisc")
-        } description: {
-            Text("Add your first record to start building your collection.")
-        } actions: {
-            // Primary button = inversion: ink fill (the tint), bg text.
-            Button("Add Release") { showAddRelease = true }
-                .buttonStyle(.borderedProminent)
-                .foregroundStyle(Palette.onInvert)
+        // Design System EmptyState copy; the button is the DS primary (square,
+        // inverted, 52pt), not a system capsule (design review 28.10).
+        VynlEmptyState(title: "No records yet",
+                       message: "Add your first release to start filtering and building crates.") {
+            Button("Add release") { showAddRelease = true }
+                .buttonStyle(.vynlPrimary)
                 .accessibilityIdentifier("collection.addReleaseButton")
         }
-        .fillBackground()
     }
 
     private var list: some View {
