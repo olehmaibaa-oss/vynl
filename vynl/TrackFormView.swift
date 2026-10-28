@@ -79,6 +79,9 @@ struct TrackFormView: View {
                 }
             }
             .screenBackground()
+            // The form's scroll view, so a test scrolls this list and not the
+            // release screen behind the sheet or the keyboard's suggestion bar.
+            .accessibilityIdentifier("trackForm.form")
             .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -206,7 +206,10 @@ These are set in the Swift code and are the contract between app and tests. Matc
   carry the Selected trait (`selected=true`, `value="1"`)
 
 **Mood vocabulary**
-- `moods.list`, `moods.row` (label = mood name), `moods.addButton`
+- `moods.list`, `moods.group` (header, label = group), `moods.row` (label = mood name as stored),
+  `moods.addButton`
+- `moodForm.groupPicker`, `moodForm.groupOption` (label = group, Selected on the chosen one; add
+  only)
 - `moodForm.nameField`, `moodForm.saveButton`, `moodForm.cancelButton`
 - `moodForm.duplicateError` — shown when the name is taken
 
@@ -276,9 +279,19 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
 - **DR-2 schema v2 (SCRUM-31), built** — mood names are stored as typed since DR-2: a mood added
   as `"  Acid "` reads `Acid` (only that scenario changed). Seeds keep their v1 lowercase spelling
   until E2-S5. Track key is a Camelot code now: the key field takes "8A" or "Am" and shows the code.
-- **E2-S5 / E2-S6 (SCRUM-38, 39)** — seeds in PRD spelling (`Hypnotic`, not `hypnotic`), grouped
-  (`moods.group`), 30 seeds; track-form mood rows `trackForm.mood.<name>` → `trackForm.moodChip`
-  by label. `mood_vocabulary.feature` and `track_moods.feature` get rewritten.
+- **E2-S5 (SCRUM-38), built** — 30 seeds in PRD spelling (`Hypnotic`), grouped. Rewritten
+  `mood_vocabulary.feature` (groups in order, PRD lists, add into a group, group required, rename
+  keeps the group) and `track_moods.feature` (PRD names). `MoodVocabularyPage.readAll()` returns
+  group → moods by scrolling and stitching page sources (expensive: `MoodSteps` reads it once per
+  check and asserts on that snapshot). `MoodFormPage.chooseGroup` / `selectedGroup`.
+- **Lazy lists — read this before writing a step on a long list.** SwiftUI List/Form rows that
+  are a few screens away are NOT in the page source. `BasePage.scrollTo(locator, listId)` drags
+  the list with that id until the element exists. By id because a sheet's backdrop screen and the
+  keyboard bar are scroll views too; a drag because `mobile: scroll` is a 7 s no-op in a SwiftUI
+  Form and `mobile: swipe` flings past rows. Lists with ids: `moods.list`, `trackForm.form`,
+  `releaseDetail.view`.
+- **E2-S6 (SCRUM-39)** — track-form mood rows `trackForm.mood.<name>` → grouped
+  `trackForm.moodChip` by label.
 - **DR-1 dark only (SCRUM-30), done** — no locator changes; the suite stayed green as-is.
 
 ---

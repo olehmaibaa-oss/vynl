@@ -8,8 +8,10 @@ import vynl.pages.CollectionPage;
 import vynl.pages.MoodFormPage;
 import vynl.pages.MoodVocabularyPage;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -19,6 +21,13 @@ public class MoodSteps {
 
     // Cucumber builds a fresh instance per scenario, so scenario state is safe here.
     private MoodFormPage form;
+    /** One read of the whole vocabulary per check: reading it scrolls the list. */
+    private Map<String, List<String>> snapshot;
+
+    private Map<String, List<String>> snapshot() {
+        if (snapshot == null) snapshot = vocabulary().readAll();
+        return snapshot;
+    }
 
     private MoodVocabularyPage vocabulary() {
         return new MoodVocabularyPage(DriverManager.get());
@@ -41,9 +50,14 @@ public class MoodSteps {
 
     // --- actions ---
 
-    @When("I add a mood {string}")
-    public void iAddAMood(String name) {
-        vocabulary().tapAdd().enterName(name).save();
+    @When("I add a mood {string} to {string}")
+    public void iAddAMoodTo(String name, String group) {
+        vocabulary().tapAdd().enterName(name).chooseGroup(group).save();
+    }
+
+    @When("I choose the group {string}")
+    public void iChooseTheGroup(String group) {
+        form.chooseGroup(group);
     }
 
     @When("I enter the mood name {string}")
@@ -77,18 +91,26 @@ public class MoodSteps {
 
     // --- assertions ---
 
-    /** Reads the actual row order, so it proves sorting, not just presence. */
-    @Then("the moods read {string}")
-    public void theMoodsRead(String commaSeparated) {
-        List<String> expected = Arrays.stream(commaSeparated.split(","))
-                .map(String::trim)
-                .toList();
-        assertEquals(expected, vocabulary().moodNames());
+    /** Reads the actual order on screen, so it proves ordering, not just presence. */
+    @Then("the groups read {string}")
+    public void theGroupsRead(String commaSeparated) {
+        assertEquals(split(commaSeparated), new ArrayList<>(snapshot().keySet()));
     }
 
-    @Then("the first mood is {string}")
-    public void theFirstMoodIs(String name) {
-        assertEquals(name, vocabulary().moodNames().get(0));
+    @Then("{string} lists {string}")
+    public void groupLists(String group, String commaSeparated) {
+        assertEquals(split(commaSeparated), snapshot().getOrDefault(group, List.of()));
+    }
+
+    @Then("the vocabulary has {int} moods")
+    public void theVocabularyHas(int count) {
+        List<String> moods = snapshot().values().stream().flatMap(List::stream).toList();
+        assertEquals(count, moods.size(), "moods: " + moods);
+    }
+
+    /** Commas inside mood names don't occur; " / " does, and survives the split. */
+    private static List<String> split(String commaSeparated) {
+        return Arrays.stream(commaSeparated.split(",")).map(String::trim).toList();
     }
 
     @Then("{string} is in the vocabulary")
@@ -98,7 +120,8 @@ public class MoodSteps {
 
     @Then("{string} is no longer in the vocabulary")
     public void isNoLongerInTheVocabulary(String name) {
-        assertTrue(vocabulary().isGone(name), "'" + name + "' is still in the vocabulary");
+        boolean listed = snapshot().values().stream().anyMatch(moods -> moods.contains(name));
+        assertTrue(!listed, "'" + name + "' is still in the vocabulary");
     }
 
     @Then("the mood save action is disabled")

@@ -117,6 +117,48 @@ public abstract class BasePage {
         waitFor(ExpectedConditions.elementToBeClickable(SWIPE_DELETE_ACTION)).click();
     }
 
+    /**
+     * Scrolls until the element exists in the hierarchy and returns it. SwiftUI
+     * Lists and Forms build rows lazily: a row a few screens down is not in the
+     * page source at all until it has been scrolled near (E2-S5's 30 moods made
+     * this the normal case). Looks down first, then back up. Presence, not
+     * visibility: a row under the keyboard is present, and XCUITest's click
+     * scrolls it to hittable itself.
+     */
+    protected WebElement scrollTo(By locator, String listId) {
+        for (String direction : new String[]{"down", "up"}) {
+            for (int i = 0; i < 12; i++) {
+                List<WebElement> found = driver.findElements(locator);
+                if (!found.isEmpty()) return found.get(0);
+                scrollList(listId, direction);
+            }
+        }
+        throw new org.openqa.selenium.NoSuchElementException("Not found after scrolling " + listId + ": " + locator);
+    }
+
+    /**
+     * Moves the list with this identifier about a third of its height in
+     * {@code direction} ("down" = towards later rows).
+     *
+     * <p>Always by id: with a sheet up, the screen behind it and the keyboard's
+     * suggestion bar are scroll views too. And a drag, not {@code mobile: scroll}
+     * or {@code mobile: swipe}: in a SwiftUI Form {@code mobile: scroll} does
+     * nothing (7 s per no-op), and a swipe flings past rows, so a lazily built
+     * row in the middle is never in the tree when we look. The drag stays in the
+     * upper half, clear of the keyboard.
+     */
+    protected void scrollList(String listId, String direction) {
+        org.openqa.selenium.Rectangle r = find(listId).getRect();
+        int x = r.getX() + r.getWidth() / 2;
+        int low = r.getY() + (int) (r.getHeight() * 0.55);
+        int high = r.getY() + (int) (r.getHeight() * 0.2);
+        boolean down = direction.equals("down");
+        driver.executeScript("mobile: dragFromToForDuration", Map.of(
+                "duration", 0.1,
+                "fromX", x, "fromY", down ? low : high,
+                "toX", x, "toY", down ? high : low));
+    }
+
     private static final By SWIPE_DELETE_ACTION = AppiumBy.iOSNsPredicateString(
             "type == 'XCUIElementTypeButton' AND label == 'Delete'");
 

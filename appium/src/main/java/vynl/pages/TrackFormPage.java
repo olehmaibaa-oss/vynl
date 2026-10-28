@@ -27,6 +27,8 @@ public class TrackFormPage extends BasePage {
     private static final String SAVE_BUTTON = "trackForm.saveButton";
     private static final String CANCEL_BUTTON = "trackForm.cancelButton";
     private static final String MOOD_ROW_PREFIX = "trackForm.mood.";
+    /** The form's own list, for scrolling to rows the List hasn't built yet. */
+    private static final String FORM = "trackForm.form";
 
     public TrackFormPage(IOSDriver driver) {
         super(driver);
@@ -107,13 +109,13 @@ public class TrackFormPage extends BasePage {
      * section sits below the text fields, so most rows start under the keyboard.
      */
     public TrackFormPage toggleMood(String mood) {
-        scrollToAndTap(MOOD_ROW_PREFIX + mood);
+        scrollTo(byId(MOOD_ROW_PREFIX + mood), FORM).click();
         return this;
     }
 
     /** A selected mood row carries the Selected trait (XCUITest: selected=true). */
     public boolean isMoodSelected(String mood) {
-        return find(MOOD_ROW_PREFIX + mood).isSelected();
+        return scrollTo(byId(MOOD_ROW_PREFIX + mood), FORM).isSelected();
     }
 
     public String bpm() {

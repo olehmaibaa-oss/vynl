@@ -55,7 +55,7 @@ The 27 Oct design kickoff changed the MVP: grid + covers move into it, a stack m
 genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tech Spec (27.10
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
 E2-S5 / E2-S6 (SCRUM-38, 39). **Done: DR-1 (dark only), DR-2 (schema v2). Built, in review:
-DR-3 (header), DR-4 (genre chips), DR-6 (Camelot wheel).** The rest is not — see the data model below for what is "today" vs "planned".
+DR-3 (header), DR-4 (genre chips), DR-6 (Camelot wheel), E2-S5 (grouped vocabulary, 30 moods).** The rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -147,7 +147,7 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   Camelot colour on track rows. **Gotcha:** a form that pushes a screen must load its fields
   once (`loaded` guard); `onAppear` fires again on pop and would overwrite the edits.
 
-### MoodTag — IMPLEMENTED (v2); screen and 30 seeds in E2-S5 (SCRUM-38)
+### MoodTag — IMPLEMENTED (v2, E2-S5 built)
 - name: String — stored **as typed**, only trimmed (`MoodTag.clean`; v1 lowercased). Unique
   case-insensitively via `MoodVocabulary.isNameTaken`, deliberately NOT `@Attribute(.unique)`
   (unique makes SwiftData upsert on collision, silently merging a rename). Lists sort A–Z ignoring
@@ -155,11 +155,15 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
 - group: `MoodGroup` (Dark & Driving, Bright & Emotional, Atmospheric, Groovy, Dub, in that order),
   stored as `groupName: String`; go through `mood.group`.
 - many-to-many with Track, nullify both ways
-- seeded once per store, tracked by a UserDefaults flag (deleting every mood doesn't reseed)
-- today: still the 8 v1 seeds in their v1 lowercase spelling, now with their PRD group (Industrial
-  in Dark & Driving, Dubby in Dub, Deep / Atmospheric in Atmospheric). A mood added on the
-  vocabulary screen goes to `MoodVocabulary.defaultGroupForNewMoods` until E2-S5 adds the group
-  picker. **E2-S5:** the PRD's 30 moods in PRD spelling, grouped screen.
+- **Seeds (E2-S5):** the PRD's 30 moods in PRD spelling and groups (`MoodVocabulary.defaults`),
+  once per store (`moodVocabularySeeded` flag; deleting every mood doesn't reseed). A store
+  seeded with the 8 lowercase v1 moods is upgraded once (`moodVocabularySeedVersion` < 2): matches
+  take the PRD spelling and group with their tags kept, missing PRD moods are added, the person's
+  own moods are left alone.
+- **Screen (E2-S5):** grouped sections (`moods.group` header, label = group name), A–Z inside.
+  Add needs a group: five chips `moodForm.groupOption` in `moodForm.groupPicker`, chosen one
+  inverted + Selected; Save disabled until name + group. Rename has no group picker (moving
+  between groups isn't in the PRD); the mood keeps its group.
 
 ### Genre — IMPLEMENTED (v2); form in DR-4
 - name: String — unique case-insensitively, the **first spelling is kept** ("dub techno" never

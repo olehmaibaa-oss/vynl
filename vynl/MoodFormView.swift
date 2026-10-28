@@ -3,7 +3,9 @@
 //  vynl
 //
 //  Add or rename a mood. Names are kept as typed, only trimmed (DR-2), and must be
-//  unique within the vocabulary — compared case-insensitively.
+//  unique within the vocabulary — compared case-insensitively. Adding needs a
+//  group (E2-S5); renaming keeps the mood's group (moving between groups is not
+//  in the PRD).
 //
 
 import SwiftUI
@@ -33,6 +35,7 @@ struct MoodFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
+    @State private var group: MoodGroup?
 
     /// Trimmed, case kept (DR-2).
     private var normalized: String { MoodTag.clean(name) }
@@ -42,14 +45,16 @@ struct MoodFormView: View {
         return (try? MoodVocabulary.isNameTaken(name, in: modelContext, excluding: target.mood)) ?? false
     }
 
-    private var canSave: Bool { !normalized.isEmpty && !isDuplicate }
+    private var canSave: Bool {
+        !normalized.isEmpty && !isDuplicate && (target.mood != nil || group != nil)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     TextField("Mood", text: $name)
-                        .textInputAutocapitalization(.never)
+                        .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()
                         .accessibilityIdentifier("moodForm.nameField")
                 } footer: {
@@ -57,6 +62,11 @@ struct MoodFormView: View {
                         Text("\"\(normalized)\" already exists.")
                             .foregroundStyle(Palette.danger)
                             .accessibilityIdentifier("moodForm.duplicateError")
+                    }
+                }
+                if target.mood == nil {
+                    Section("Group") {
+                        groupPicker
                     }
                 }
             }
@@ -87,10 +97,35 @@ struct MoodFormView: View {
         guard canSave else { return }
         switch target {
         case .add:
-            modelContext.insert(MoodTag(name: normalized, group: MoodVocabulary.defaultGroupForNewMoods))
+            guard let group else { return }
+            modelContext.insert(MoodTag(name: normalized, group: group))
         case .rename(let mood):
             mood.name = normalized
         }
         dismiss()
+    }
+
+    /// Five chips, one pick; the chosen one is inverted (Design System: inversion = "on").
+    private var groupPicker: some View {
+        FlowLayout(spacing: 8) {
+            ForEach(MoodGroup.allCases) { option in
+                let isOn = group == option
+                Button {
+                    group = option
+                } label: {
+                    ChipLabel(text: option.rawValue, inverted: isOn)
+                        .chipFrame(inverted: isOn)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(option.rawValue)
+                .accessibilityIdentifier("moodForm.groupOption")
+                .accessibilityAddTraits(isOn ? .isSelected : [])
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("moodForm.groupPicker")
+        .padding(.vertical, 4)
     }
 }

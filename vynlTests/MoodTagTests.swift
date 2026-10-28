@@ -56,12 +56,12 @@ struct MoodTagTests {
 
     @Test func aDeletedDefaultIsNotResurrected() throws {
         try MoodVocabulary.seedIfNeeded(in: context, flags: flags)
-        context.delete(try mood("industrial"))
+        context.delete(try mood("Industrial"))
         try context.save()
 
         try MoodVocabulary.seedIfNeeded(in: context, flags: flags)
 
-        #expect(try !moodNames().contains("industrial"))
+        #expect(try !moodNames().contains("Industrial"))
     }
 
     @Test func deletingEveryMoodDoesNotReseed() throws {
@@ -98,11 +98,55 @@ struct MoodTagTests {
         #expect(fetched.groupName == "Groovy")
     }
 
-    @Test func seededMoodsSitInTheirPRDGroups() throws {
+    // MARK: - E2-S5: the PRD vocabulary
+
+    @Test func theSeededVocabularyIsThePRDs30() throws {
         try MoodVocabulary.seedIfNeeded(in: context, flags: flags)
-        #expect(try mood("industrial").group == .darkAndDriving)
-        #expect(try mood("dubby").group == .dub)
-        #expect(try mood("deep").group == .atmospheric)
+        let moods = try context.fetch(FetchDescriptor<MoodTag>())
+        #expect(moods.count == 30)
+        #expect(try mood("Industrial").group == .darkAndDriving)
+        #expect(try mood("Dubby").group == .dub)
+        #expect(try mood("Spacey / Cosmic").group == .atmospheric)
+        let perGroup = MoodGroup.allCases.map { g in moods.filter { $0.group == g }.count }
+        #expect(perGroup == [9, 6, 7, 7, 1])
+    }
+
+    /// A store seeded with the 8 lowercase v1 moods, one of them tagging a track,
+    /// plus a mood the person made themselves.
+    private func seedV1() throws -> Track {
+        for name in ["hypnotic", "driving", "dark", "minimal", "industrial", "atmospheric", "deep", "dubby"] {
+            context.insert(MoodTag(name: name, group: .darkAndDriving))
+        }
+        context.insert(MoodTag(name: "Acid", group: .darkAndDriving))
+        let a1 = track("A1", moods: [try mood("dubby")])
+        try context.save()
+        flags.set(true, forKey: MoodVocabulary.seededFlag)   // v1 never wrote a seed version
+        return a1
+    }
+
+    @Test func aV1VocabularyIsUpgradedInPlace() throws {
+        let a1 = try seedV1()
+
+        try MoodVocabulary.seedIfNeeded(in: context, flags: flags)
+
+        let moods = try context.fetch(FetchDescriptor<MoodTag>())
+        #expect(moods.count == 31)                                   // 30 PRD + Acid
+        #expect(!moods.contains { $0.name == "dubby" })              // respelled, not duplicated
+        #expect(try mood("Dubby").group == .dub)
+        #expect(a1.moods.map(\.name) == ["Dubby"])                   // the tag survived the respelling
+        #expect(try mood("Acid").group == .darkAndDriving)           // the person's own mood untouched
+        #expect(flags.integer(forKey: MoodVocabulary.seedVersionKey) == MoodVocabulary.seedVersion)
+    }
+
+    @Test func theUpgradeRunsOnce() throws {
+        _ = try seedV1()
+        try MoodVocabulary.seedIfNeeded(in: context, flags: flags)
+        context.delete(try mood("Raw"))
+        try context.save()
+
+        try MoodVocabulary.seedIfNeeded(in: context, flags: flags)
+
+        #expect(try !moodNames().contains("Raw"))
     }
 
     @Test func groupsAreTheFiveFromTheSpecInOrder() {
