@@ -1,10 +1,13 @@
 package vynl.pages;
 
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.ios.IOSDriver;
+import org.openqa.selenium.By;
 import vynl.config.Config;
 
 /**
- * The add / edit track sheet. Required: position, title. Optional: bpm, key.
+ * The add / edit track sheet. Required: position, title. Optional: bpm, key
+ * (DR-6: picked on the Camelot wheel, a pushed screen).
  * Save stays disabled until both required fields are non-empty.
  *
  * <p>The bpm field strips non-digits as you type ({@code .onChange} filter in
@@ -16,7 +19,11 @@ public class TrackFormPage extends BasePage {
     private static final String POSITION_FIELD = "trackForm.positionField";
     private static final String TITLE_FIELD = "trackForm.titleField";
     private static final String BPM_FIELD = "trackForm.bpmField";
-    private static final String KEY_FIELD = "trackForm.keyField";
+    private static final String KEY_BUTTON = "trackForm.keyButton";
+    private static final String SEGMENT = "camelot.segment";
+    private static final String CLEAR_KEY = "camelot.clearButton";
+    /** The key button's label when no key is set. */
+    public static final String NO_KEY = "Key";
     private static final String SAVE_BUTTON = "trackForm.saveButton";
     private static final String CANCEL_BUTTON = "trackForm.cancelButton";
     private static final String MOOD_ROW_PREFIX = "trackForm.mood.";
@@ -46,9 +53,53 @@ public class TrackFormPage extends BasePage {
         return this;
     }
 
-    public TrackFormPage setKey(String key) {
-        type(KEY_FIELD, key);
+    // --- key (DR-6) ---
+
+    /** Opens the wheel, taps the segment for a Camelot code ("8A"); the wheel closes on a pick. */
+    public TrackFormPage pickKey(String camelot) {
+        openKeyPicker();
+        driver.findElement(segment(camelot)).click();
+        find(KEY_BUTTON);
         return this;
+    }
+
+    public TrackFormPage openKeyPicker() {
+        scrollToAndTap(KEY_BUTTON);
+        waitFor(org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated(byId(SEGMENT)));
+        return this;
+    }
+
+    /** On the open wheel: "Clear" removes the key and closes the wheel. */
+    public TrackFormPage clearKey() {
+        openKeyPicker();
+        tap(CLEAR_KEY);
+        find(KEY_BUTTON);
+        return this;
+    }
+
+    /** Labels of the wheel's segments ("1A · Abm", …). The wheel must be open. */
+    public java.util.List<String> keySegments() {
+        return labelsOf(SEGMENT);
+    }
+
+    /** The segment carrying the Selected trait, or null. The wheel must be open. */
+    public String selectedSegment() {
+        return driver.findElements(byId(SEGMENT)).stream()
+                .filter(e -> e.isSelected())
+                .map(e -> e.getAttribute("label"))
+                .findFirst().orElse(null);
+    }
+
+    /** Leaves the wheel without picking (system back button). */
+    public TrackFormPage closeKeyPicker() {
+        driver.findElement(AppiumBy.accessibilityId("BackButton")).click();
+        find(KEY_BUTTON);
+        return this;
+    }
+
+    private static By segment(String camelot) {
+        return AppiumBy.iOSNsPredicateString(
+                "name == '" + SEGMENT + "' AND label BEGINSWITH '" + camelot + " ·'");
     }
 
     /**
@@ -69,8 +120,9 @@ public class TrackFormPage extends BasePage {
         return valueOf(BPM_FIELD);
     }
 
+    /** "8A · Am", or {@link #NO_KEY} when the track has none. */
     public String key() {
-        return valueOf(KEY_FIELD);
+        return find(KEY_BUTTON).getAttribute("label");
     }
 
     /**

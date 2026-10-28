@@ -51,8 +51,8 @@ enum CamelotKey: String, CaseIterable, Codable, Identifiable {
         self.init(rawValue: code.trimmingCharacters(in: .whitespaces).uppercased())
     }
 
-    /// A Camelot code or a classic name ("8A", "Am"). Used by the free-text key
-    /// field until DR-6 replaces it with the wheel.
+    /// A Camelot code or a classic name ("8A", "Am"). The track form uses the
+    /// wheel since DR-6; kept for importing keys written as text (Discogs, post-MVP).
     init?(parsing text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         if let key = CamelotKey(code: trimmed) {

@@ -64,4 +64,12 @@ struct CamelotKeyTests {
         let track = Track(position: "A1", title: "Magneze")
         #expect(track.keyCode == nil && track.key == nil)
     }
+
+    // DR-6: the wheel's "compatible keys" — same number on the other ring, ±1 on the same ring.
+    @Test func compatibleKeys() {
+        #expect(CamelotKey.k8A.compatible == [.k8B, .k7A, .k9A])
+        #expect(CamelotKey.k12B.compatible == [.k12A, .k11B, .k1B])
+        #expect(CamelotKey.k1A.compatible == [.k1B, .k12A, .k2A])
+        #expect(CamelotKey.allCases.allSatisfy { $0.compatible.count == 3 && !$0.compatible.contains($0) })
+    }
 }

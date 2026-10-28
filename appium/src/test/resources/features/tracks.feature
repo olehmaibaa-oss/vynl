@@ -7,7 +7,7 @@ Feature: Tracks
     Given I am on a release detail screen
     When I add a track "A1" / "Magneze" with bpm "132" and key "8A"
     Then I see the track "A1" / "Magneze" in the track list
-    And the track "A1" keeps bpm "132" and key "8A"
+    And the track "A1" keeps bpm "132" and key "8A · Am"
 
   Scenario: Optional track fields can be left empty
     Given I am on a release detail screen

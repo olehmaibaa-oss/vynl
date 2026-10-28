@@ -77,6 +77,11 @@ struct ReleaseDetailView: View {
                                             .accessibilityIdentifier("releaseDetail.trackMoods")
                                     }
                                 }
+                                Spacer(minLength: 8)
+                                // DR-6: "8A · Am" on its Camelot colour.
+                                if track.key != nil {
+                                    KeyChip(key: track.key)
+                                }
                             }
                         }
                         // Label stays the track's identity ("A1, Magneze"); the

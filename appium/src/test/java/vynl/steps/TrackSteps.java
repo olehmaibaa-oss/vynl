@@ -55,7 +55,7 @@ public class TrackSteps {
                 .setPosition(position)
                 .setTitle(title)
                 .setBpm(bpm)
-                .setKey(key)
+                .pickKey(key)
                 .save();
     }
 

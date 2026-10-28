@@ -55,7 +55,7 @@ The 27 Oct design kickoff changed the MVP: grid + covers move into it, a stack m
 genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tech Spec (27.10
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
 E2-S5 / E2-S6 (SCRUM-38, 39). **Done: DR-1 (dark only), DR-2 (schema v2). Built, in review:
-DR-3 (header), DR-4 (genre chips).** The rest is not — see the data model below for what is "today" vs "planned".
+DR-3 (header), DR-4 (genre chips), DR-6 (Camelot wheel).** The rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -130,7 +130,7 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
 - `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
 
-### Track — IMPLEMENTED (v2); the wheel comes in DR-6
+### Track — IMPLEMENTED (v2)
 - position: String — required (e.g. "A1", "B2")
 - title: String — required
 - bpm: Int? — optional
@@ -138,8 +138,14 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
 - many-to-many to MoodTag (`moods`)
 - key: `CamelotKey?` (24 cases 1A–12B), stored as its code in `keyCode: String?` so E3 can use it in
   a predicate; always go through `track.key`. Classic name derived (`classicName`, "Am"), shown as
-  `display` ("8A · Am"). Until DR-6 the track form keeps a text field that accepts a code or a
-  classic name (`CamelotKey(parsing:)`); anything else saves no key.
+  `display` ("8A · Am"). **Picked on the Camelot wheel (DR-6, built):** `CamelotWheel.swift` —
+  the track form row `trackForm.keyButton` (label = "8A · Am" or "Key") pushes
+  `CamelotPickerView` (pushed, not a sheet: the form is already one); 24 `camelot.segment`s, each
+  its own element with its own frame and activation point (a tap from XCUITest lands on the
+  segment); picking pops; `camelot.clearButton` clears. Picked key: ink outline, compatible keys
+  (`CamelotKey.compatible`) keep colour, the rest `surface-2`. `KeyChip` shows the key on its
+  Camelot colour on track rows. **Gotcha:** a form that pushes a screen must load its fields
+  once (`loaded` guard); `onAppear` fires again on pop and would overwrite the edits.
 
 ### MoodTag — IMPLEMENTED (v2); screen and 30 seeds in E2-S5 (SCRUM-38)
 - name: String — stored **as typed**, only trimmed (`MoodTag.clean`; v1 lowercased). Unique

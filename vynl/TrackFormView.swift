@@ -20,7 +20,8 @@ struct TrackFormView: View {
     @State private var position = ""
     @State private var title = ""
     @State private var bpmText = ""
-    @State private var key = ""
+    @State private var key: CamelotKey?
+    @State private var loaded = false
     /// Held in form state and written only on Save, so Cancel never leaks a change.
     @State private var selectedMoods: Set<PersistentIdentifier> = []
 
@@ -55,8 +56,18 @@ struct TrackFormView: View {
                         .onChange(of: bpmText) { _, newValue in
                             bpmText = newValue.filter(\.isNumber)
                         }
-                    TextField("Key", text: $key)
-                        .accessibilityIdentifier("trackForm.keyField")
+                    // DR-6: picked on the Camelot wheel, pushed (no sheet on a sheet).
+                    NavigationLink {
+                        CamelotPickerView(selection: $key)
+                    } label: {
+                        HStack {
+                            Text("Key").foregroundStyle(key == nil ? Palette.inkDim : Palette.ink)
+                            Spacer()
+                            if key != nil { KeyChip(key: key) }
+                        }
+                    }
+                    .accessibilityLabel(key?.display ?? "Key")
+                    .accessibilityIdentifier("trackForm.keyButton")
                 }
                 Section {
                     ForEach(vocabulary) { mood in
@@ -86,11 +97,16 @@ struct TrackFormView: View {
                 }
             }
             .onAppear {
+                // Load once. onAppear fires again when the key picker is popped,
+                // and reloading then would throw away what was just edited,
+                // including a cleared key (found by camelot.feature, DR-6).
+                guard !loaded else { return }
+                loaded = true
                 if case .edit(let track) = mode {
                     position = track.position
                     title = track.title
                     bpmText = track.bpm.map { String($0) } ?? ""
-                    key = track.key?.code ?? ""
+                    key = track.key
                     selectedMoods = Set(track.moods.map(\.persistentModelID))
                 }
             }
@@ -100,9 +116,7 @@ struct TrackFormView: View {
     private func save() {
         let trimmedPosition = position.trimmingCharacters(in: .whitespaces)
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
-        // Free text until DR-6 brings the Camelot wheel: a code ("8A") or a classic
-        // name ("Am") is stored as its Camelot code; anything else saves no key.
-        let camelotKey = CamelotKey(parsing: key)
+        let camelotKey = key
         // Re-filter at save time: the onChange filter can miss a keystroke under
         // fast input, and Int("12b3") would silently drop the bpm (SCRUM-27).
         let bpm = Int(bpmText.filter(\.isNumber))

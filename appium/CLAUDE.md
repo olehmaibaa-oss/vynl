@@ -71,7 +71,8 @@ appium/
         │   └── steps/               step definitions (page objects only)
         │       ├── Flows.java          shared data setup (new release, add track)
         │       ├── AddReleaseSteps, ReleaseDetailSteps, TrackSteps,
-        │       ├── EditReleaseSteps, GenreSteps, DeleteReleaseSteps, NavigationSteps,
+        │       ├── EditReleaseSteps, GenreSteps, CamelotSteps, DeleteReleaseSteps,
+        │       ├── NavigationSteps,
         │       ├── MoodSteps, TrackMoodSteps
         └── resources/
             ├── config.properties   capabilities, timeouts
@@ -79,6 +80,7 @@ appium/
                 ├── add_release.feature      @add-release
                 ├── edit_release.feature     @edit-release
                 ├── genres.feature           @genres
+                ├── camelot.feature          @camelot
                 ├── release_detail.feature   @release-detail
                 ├── tracks.feature           @tracks
                 ├── delete_release.feature   @delete
@@ -196,7 +198,8 @@ These are set in the Swift code and are the contract between app and tests. Matc
 
 **Track add / edit form**
 - `trackForm.positionField`, `trackForm.titleField` (required)
-- `trackForm.bpmField`, `trackForm.keyField` (optional)
+- `trackForm.bpmField` (optional); key: `trackForm.keyButton` (label = key or "Key") → wheel:
+  `camelot.segment` (label "8A · Am", Selected on the current one), `camelot.clearButton`
 - `trackForm.saveButton`, `trackForm.cancelButton`
 - `trackForm.moodsSection` — the Moods header
 - `trackForm.mood.<name>` — one toggle per mood, e.g. `trackForm.mood.hypnotic`; selected rows
@@ -264,8 +267,12 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
   (the "Genre, Techno" LabeledContent is gone). `genres.feature` (@genres); AUTO-1 outline has a
   `genre` row; AUTO-4's "clear genre" = "Removing the last genre blocks saving" in genres.feature.
   After adding a genre the field keeps focus, so the keyboard stays up over Label/Year.
-- **DR-6 Camelot key (SCRUM-35)** — free-text `trackForm.keyField` → `trackForm.keyButton` +
-  `camelot.segment`; `TrackFormPage.setKey` becomes a picker.
+- **DR-6 Camelot key (SCRUM-35), built** — `TrackFormPage.pickKey("8A")` (opens the wheel, taps
+  the segment whose label begins "8A ·"; the wheel pops itself), `openKeyPicker`, `clearKey`,
+  `closeKeyPicker` (system `BackButton`), `keySegments`, `selectedSegment`; `key()` reads
+  `trackForm.keyButton`'s label ("8A · Am" / `TrackFormPage.NO_KEY` = "Key"). `camelot.feature`
+  (@camelot), incl. a regression for edits lost when the wheel pops. Segment taps work by
+  element click: each segment has its own frame + activation point.
 - **DR-2 schema v2 (SCRUM-31), built** — mood names are stored as typed since DR-2: a mood added
   as `"  Acid "` reads `Acid` (only that scenario changed). Seeds keep their v1 lowercase spelling
   until E2-S5. Track key is a Camelot code now: the key field takes "8A" or "Am" and shows the code.
@@ -297,7 +304,7 @@ SegmentedControl; segments are Buttons labelled "Owned" / "Sold", pick by label 
 render as "—").
 Tracks section lists position + title sorted by position; empty state with an add CTA when there are none.
 
-**Tracks** — required: position (e.g. "A1"), title. Optional: bpm (numeric only), key (free text).
+**Tracks** — required: position (e.g. "A1"), title. Optional: bpm (numeric only), key (Camelot wheel, "8A · Am").
 Tapping a track row opens it for editing, pre-filled. Swipe-to-delete removes a track.
 
 **Delete release** — confirmation alert; confirming removes the release *and all its tracks*
