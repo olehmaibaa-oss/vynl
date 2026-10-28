@@ -9,15 +9,22 @@
 import SwiftUI
 
 struct CratesPlaceholderView: View {
+    // DR-3: the section title is content (Design System SectionTitle), so the bar
+    // draws none. No "+" here until E4: no disabled or placeholder control.
     var body: some View {
-        ContentUnavailableView {
-            Label("Crates are on the way", systemImage: "archivebox")
-        } description: {
-            Text("Pick records for a gig and mark the tracks you'll play.")
+        VStack(spacing: 0) {
+            SectionTitle(text: "Crates")
+                .padding(.top, 8)
+            ContentUnavailableView {
+                Label("Crates are on the way", systemImage: "archivebox")
+            } description: {
+                Text("Pick records for a gig and mark the tracks you'll play.")
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("crates.placeholder")
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("crates.placeholder")
         .fillBackground()
+        .hiddenNavigationTitle()
     }
 }
 

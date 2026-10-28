@@ -21,22 +21,28 @@ struct CollectionView: View {
         .navigationDestination(for: Release.self) { release in
             ReleaseDetailView(release: release)
         }
+        // DR-3: every action on the right, in one group. The grid/stack toggle joins
+        // it in DR-7. No visible title (Collection draft v0); navigationTitle stays
+        // for VoiceOver and the back button.
+        .hiddenNavigationTitle()
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 NavigationLink {
                     MoodVocabularyView()
                 } label: {
                     Image(systemName: "gearshape")
+                        .fontWeight(.semibold)
                 }
                 .accessibilityLabel("Moods")
                 .accessibilityIdentifier("collection.moodsButton")
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
+
                 Button {
                     showAddRelease = true
                 } label: {
                     Image(systemName: "plus")
+                        .fontWeight(.semibold)
                 }
+                .accessibilityLabel("Add release")
                 .accessibilityIdentifier("collection.toolbarAddButton")
             }
         }

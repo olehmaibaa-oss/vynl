@@ -54,8 +54,8 @@ All six stories shipped:
 The 27 Oct design kickoff changed the MVP: grid + covers move into it, a stack mode, multiple
 genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tech Spec (27.10
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
-E2-S5 / E2-S6 (SCRUM-38, 39). **DR-1 (dark only, Design System colours) is done; DR-2 (schema
-v2) is built**, in review; the rest is not — see the data model below for what is "today" vs "planned".
+E2-S5 / E2-S6 (SCRUM-38, 39). **Done: DR-1 (dark only), DR-2 (schema v2). Built, in review:
+DR-3 (header).** The rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -196,11 +196,14 @@ TabView (bottom, native: Liquid Glass on iOS 26, classic bar on 18–25; no sear
 └── "Crates" tab     → crate list → crate → crate item                     (content in E4)
 Header, trailing: grid/stack toggle and mood gear (Collection only), contextual "+"
 ```
-- Each tab owns its own `NavigationStack`. **Today:** Collection is a list; the gear sits top-left;
-  Crates shows a placeholder.
-- **Planned:** header actions move to the right (DR-3); Collection draws **no visible title**
-  (navigationTitle kept for VoiceOver / back), Crates keeps its large title; "+" on Crates hidden
-  until E4 — no disabled or placeholder controls; grid / stack modes replace the list (DR-7): the
+- Each tab owns its own `NavigationStack`. **Today:** Collection is a list; Crates shows a
+  placeholder.
+- **Header (DR-3, built):** Collection's actions (moods gear, "+") are one `ToolbarItemGroup` on
+  the right; the grid/stack toggle joins it in DR-7. Collection draws **no visible title**:
+  `navigationTitle("Collection")` stays (VoiceOver, the back button reads "Collection") and
+  `.hiddenNavigationTitle()` blanks the bar. Crates shows the Design System `SectionTitle`
+  ("CRATES", screen-title + heavy rule) as content, bar title hidden; no "+" on Crates until E4.
+- **Planned:** grid / stack modes replace the list (DR-7): the
   grid opens a release on tap via push with a zoom transition from the cover, the stack expands
   the card in place and opens the release from **Open release**; filter is a bar above the tab bar
   plus a sheet (E3); sort placement open (DR-8).

@@ -28,6 +28,20 @@ public class CollectionPage extends BasePage {
         return new MoodVocabularyPage(driver);
     }
 
+    /**
+     * DR-3: the header's actions sit together on the right. "Right" = the button's
+     * left edge is past the middle of the screen; reads the Button, not its iOS 26
+     * toolbar wrapper (same frame, but the Button is the one users hit).
+     */
+    public boolean areHeaderActionsOnTheRight() {
+        int screenWidth = driver.manage().window().getSize().getWidth();
+        for (String id : new String[]{MOODS_BUTTON, TOOLBAR_ADD_BUTTON}) {
+            int x = waitFor(ExpectedConditions.presenceOfElementLocated(button(id))).getRect().getX();
+            if (x < screenWidth / 2) return false;
+        }
+        return true;
+    }
+
     public AddReleasePage tapToolbarAdd() {
         tap(TOOLBAR_ADD_BUTTON);
         return new AddReleasePage(driver);

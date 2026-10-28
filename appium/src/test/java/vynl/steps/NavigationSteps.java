@@ -46,6 +46,24 @@ public class NavigationSteps {
                 "Collection screen not shown");
     }
 
+    @Then("the moods and add buttons are on the right of the header")
+    public void theHeaderActionsAreOnTheRight() {
+        assertTrue(new CollectionPage(DriverManager.get()).areHeaderActionsOnTheRight(),
+                "A Collection header action is not on the right");
+    }
+
+    @Then("the section title reads {string}")
+    public void theSectionTitleReads(String title) {
+        assertTrue(new CratesPage(DriverManager.get()).showsTitle(title),
+                "Section title '" + title + "' not shown");
+    }
+
+    @Then("there is no add button")
+    public void thereIsNoAddButton() {
+        assertTrue(new CratesPage(DriverManager.get()).hasNoAddButton(),
+                "An add button is shown on Crates");
+    }
+
     @Then("I see the Crates placeholder")
     public void iSeeTheCratesPlaceholder() {
         assertTrue(new CratesPage(DriverManager.get()).isPlaceholderVisible(),

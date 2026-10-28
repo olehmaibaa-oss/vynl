@@ -247,9 +247,10 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
   `collection.openReleaseButton`. `-uitesting` starts in the grid, so `openRelease` stays a tap
   there; stack scenarios need their own expand / open steps (`collection.trackList`,
   `collection.trackRow`, `collection.hideTracksButton`).
-- **DR-3 header (SCRUM-32)** — gear moves right, ids unchanged; Crates gets no "+". The
-  Collection title is no longer drawn (navigationTitle kept), so
-  any "COLLECTION title visible" check is dropped; the Crates large title is still asserted.
+- **DR-3 header (SCRUM-32), built** — gear moved right next to "+", ids unchanged
+  (`CollectionPage.areHeaderActionsOnTheRight` checks both Buttons are past mid-screen). Collection
+  draws no title; Crates' "CRATES" is a header StaticText in the content (`CratesPage.showsTitle`),
+  the nav bar there is `visible=false`. Crates has no "+" (`CratesPage.hasNoAddButton`).
 - **E3 filter** — a bar `filter.bar` (value "14 records") + sheet replaces the planned per-filter
   chips and `filter.resultCount`. Full id list in the root CLAUDE.md.
 - **`AddReleasePage.fillRequired` / `fillRequiredExcept`** and the add/edit features are built
