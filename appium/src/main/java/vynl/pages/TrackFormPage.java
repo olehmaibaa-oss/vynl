@@ -26,7 +26,9 @@ public class TrackFormPage extends BasePage {
     public static final String NO_KEY = "Key";
     private static final String SAVE_BUTTON = "trackForm.saveButton";
     private static final String CANCEL_BUTTON = "trackForm.cancelButton";
-    private static final String MOOD_ROW_PREFIX = "trackForm.mood.";
+    /** E2-S6: one chip per mood, told apart by label; Selected when on. */
+    private static final String MOOD_CHIP = "trackForm.moodChip";
+    private static final String MOOD_GROUP = "trackForm.moodGroup";
     /** The form's own list, for scrolling to rows the List hasn't built yet. */
     private static final String FORM = "trackForm.form";
 
@@ -99,6 +101,24 @@ public class TrackFormPage extends BasePage {
         return this;
     }
 
+    /** The mood group headers in on-screen order, read by scrolling the form. */
+    public java.util.List<String> moodGroups() {
+        java.util.List<String> seen = new java.util.ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            for (org.openqa.selenium.WebElement e : driver.findElements(byId(MOOD_GROUP))) {
+                String label = e.getAttribute("label");
+                if (!seen.contains(label)) seen.add(label);
+            }
+            if (seen.contains("Dub")) break;
+            scrollList(FORM, "down");
+        }
+        return seen;
+    }
+
+    private static By moodChip(String mood) {
+        return AppiumBy.iOSNsPredicateString("name == '" + MOOD_CHIP + "' AND label == '" + mood + "'");
+    }
+
     private static By segment(String camelot) {
         return AppiumBy.iOSNsPredicateString(
                 "name == '" + SEGMENT + "' AND label BEGINSWITH '" + camelot + " ·'");
@@ -109,13 +129,13 @@ public class TrackFormPage extends BasePage {
      * section sits below the text fields, so most rows start under the keyboard.
      */
     public TrackFormPage toggleMood(String mood) {
-        scrollTo(byId(MOOD_ROW_PREFIX + mood), FORM).click();
+        scrollTo(moodChip(mood), FORM).click();
         return this;
     }
 
     /** A selected mood row carries the Selected trait (XCUITest: selected=true). */
     public boolean isMoodSelected(String mood) {
-        return scrollTo(byId(MOOD_ROW_PREFIX + mood), FORM).isSelected();
+        return scrollTo(moodChip(mood), FORM).isSelected();
     }
 
     public String bpm() {

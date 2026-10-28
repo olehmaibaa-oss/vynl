@@ -58,6 +58,17 @@ public class TrackMoodSteps {
                 .save();
     }
 
+    @When("I start adding a track")
+    public void iStartAddingATrack() {
+        form = detail().tapToolbarAddTrack();
+    }
+
+    @Then("the mood groups read {string}")
+    public void theMoodGroupsRead(String commaSeparated) {
+        assertEquals(java.util.Arrays.stream(commaSeparated.split(",")).map(String::trim).toList(),
+                form.moodGroups());
+    }
+
     @When("I open the track {string}")
     public void iOpenTheTrack(String position) {
         form = detail().openTrack(position);

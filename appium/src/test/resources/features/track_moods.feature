@@ -6,6 +6,12 @@ Feature: Track moods
   # form's result is observed, so every
   # "shows moods" check reads the release's track list after the form closed.
 
+  # E2-S6 (SCRUM-39): chips grouped by mood family.
+  Scenario: Mood chips are grouped in the track form
+    Given I am on a release detail screen
+    When I start adding a track
+    Then the mood groups read "Dark & Driving, Bright & Emotional, Atmospheric, Groovy, Dub"
+
   Scenario: Tag a new track with several moods
     Given I am on a release detail screen
     When I add a track "A1" / "Magneze" with moods "Hypnotic" and "Deep"

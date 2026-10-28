@@ -55,7 +55,8 @@ The 27 Oct design kickoff changed the MVP: grid + covers move into it, a stack m
 genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tech Spec (27.10
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
 E2-S5 / E2-S6 (SCRUM-38, 39). **Done: DR-1 (dark only), DR-2 (schema v2). Built, in review:
-DR-3 (header), DR-4 (genre chips), DR-6 (Camelot wheel), E2-S5 (grouped vocabulary, 30 moods).** The rest is not — see the data model below for what is "today" vs "planned".
+DR-3 (header), DR-4 (genre chips), DR-6 (Camelot wheel), E2-S5 (grouped vocabulary, 30 moods),
+E2-S6 (grouped mood chips in the track form).** The rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).

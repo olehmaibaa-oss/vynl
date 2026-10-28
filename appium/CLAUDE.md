@@ -201,9 +201,8 @@ These are set in the Swift code and are the contract between app and tests. Matc
 - `trackForm.bpmField` (optional); key: `trackForm.keyButton` (label = key or "Key") → wheel:
   `camelot.segment` (label "8A · Am", Selected on the current one), `camelot.clearButton`
 - `trackForm.saveButton`, `trackForm.cancelButton`
-- `trackForm.moodsSection` — the Moods header
-- `trackForm.mood.<name>` — one toggle per mood, e.g. `trackForm.mood.hypnotic`; selected rows
-  carry the Selected trait (`selected=true`, `value="1"`)
+- `trackForm.moodGroup` — a group header (label = group); `trackForm.moodChip` — one chip per mood
+  (label = mood name), Selected trait when on (`selected=true`, `value="1"`)
 
 **Mood vocabulary**
 - `moods.list`, `moods.group` (header, label = group), `moods.row` (label = mood name as stored),
@@ -290,8 +289,10 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
   keyboard bar are scroll views too; a drag because `mobile: scroll` is a 7 s no-op in a SwiftUI
   Form and `mobile: swipe` flings past rows. Lists with ids: `moods.list`, `trackForm.form`,
   `releaseDetail.view`.
-- **E2-S6 (SCRUM-39)** — track-form mood rows `trackForm.mood.<name>` → grouped
-  `trackForm.moodChip` by label.
+- **E2-S6 (SCRUM-39), built** — track-form moods are chips `trackForm.moodChip` (label = mood,
+  Selected when on) in one section per group (`trackForm.moodGroup` header). `TrackFormPage`
+  `toggleMood` / `isMoodSelected` match the chip by label (scrolling `trackForm.form`),
+  `moodGroups()` reads the headers.
 - **DR-1 dark only (SCRUM-30), done** — no locator changes; the suite stayed green as-is.
 
 ---

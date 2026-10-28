@@ -69,14 +69,9 @@ struct TrackFormView: View {
                     .accessibilityLabel(key?.display ?? "Key")
                     .accessibilityIdentifier("trackForm.keyButton")
                 }
-                Section {
-                    ForEach(vocabulary) { mood in
-                        moodRow(mood)
-                    }
-                } header: {
-                    Text("Moods")
-                        .accessibilityIdentifier("trackForm.moodsSection")
-                }
+                // E2-S6: grouped chips (one section per mood group) instead of
+                // 30 toggle rows.
+                MoodPicker(selection: $selectedMoods)
             }
             .screenBackground()
             // The form's scroll view, so a test scrolls this list and not the
@@ -148,30 +143,5 @@ struct TrackFormView: View {
 
     private var chosenMoods: [MoodTag] {
         vocabulary.filter { selectedMoods.contains($0.persistentModelID) }
-    }
-
-    /// One toggle row per mood. The checkmark is the visual state; the Selected
-    /// trait is the same state for VoiceOver and UI tests.
-    private func moodRow(_ mood: MoodTag) -> some View {
-        let isSelected = selectedMoods.contains(mood.persistentModelID)
-        return Button {
-            if isSelected {
-                selectedMoods.remove(mood.persistentModelID)
-            } else {
-                selectedMoods.insert(mood.persistentModelID)
-            }
-        } label: {
-            HStack {
-                Text(mood.name)
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(Palette.ink)
-                }
-            }
-        }
-        .foregroundStyle(Palette.ink)
-        .accessibilityIdentifier("trackForm.mood.\(mood.name)")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
