@@ -87,47 +87,68 @@ struct SleeveView: View {
 }
 
 /// The Design System's generated sleeve: bit 0 of the seed picks the ground
-/// (surface or ink), (seed >> 1) % 3 the pattern: groove rings from a corner,
-/// bars, or a disc. Monochrome, so real covers stay the only colour in a grid.
+/// (surface or ink), (seed >> 1) % 4 the pattern. No circles: the die-cut is
+/// the only circle on a sleeve, anything round around it reads as a second
+/// record (design review 28.10). Monochrome, so real covers stay the only
+/// colour in a grid.
 struct GeneratedSleeve: View {
     let seed: UInt32
+
+    enum Pattern: Int, CaseIterable { case bars, lines, diagonal, split }
+
+    static func pattern(for seed: UInt32) -> Pattern {
+        Pattern(rawValue: Int((seed >> 1) % 4))!
+    }
 
     var body: some View {
         let onInk = seed & 1 == 1
         let ground = onInk ? Palette.ink : Palette.surface
         let figure = onInk ? Palette.surface : Palette.ink
-        GeometryReader { geo in
-            let s = geo.size.width
-            ZStack {
-                ground
-                switch (seed >> 1) % 3 {
-                case 0:
-                    // Groove rings from a corner.
-                    let corner = CGPoint(x: (seed >> 3) & 1 == 0 ? 0 : s, y: (seed >> 4) & 1 == 0 ? 0 : s)
-                    ForEach(0..<9, id: \.self) { i in
-                        Circle()
-                            .stroke(figure.opacity(0.85), lineWidth: s * 0.018)
-                            .frame(width: s * (0.3 + CGFloat(i) * 0.24), height: s * (0.3 + CGFloat(i) * 0.24))
-                            .position(corner)
-                    }
-                case 1:
-                    // Bars.
-                    let bars = 3 + Int((seed >> 5) % 4)
-                    HStack(spacing: s / CGFloat(bars * 2)) {
-                        ForEach(0..<bars, id: \.self) { _ in figure.frame(width: s / CGFloat(bars * 2)) }
-                    }
-                    .padding(.horizontal, s / CGFloat(bars * 4))
-                default:
-                    // A disc, off centre.
-                    Circle().fill(figure)
-                        .frame(width: s * 0.62, height: s * 0.62)
-                        .position(x: s * (0.35 + Double((seed >> 6) % 30) / 100), y: s * 0.62)
+        let pattern = Self.pattern(for: seed)
+        let variant = Int((seed >> 5) % 4)
+        Canvas { ctx, size in
+            let s = size.width
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(ground))
+            var path = Path()
+            switch pattern {
+            case .bars:
+                // Vertical bars, as many gaps as bars, half a gap at the edges.
+                let bars = 3 + variant
+                let w = s / CGFloat(bars * 2)
+                for i in 0..<bars {
+                    path.addRect(CGRect(x: w / 2 + CGFloat(i) * 2 * w, y: 0, width: w, height: s))
                 }
+            case .lines:
+                // Thin horizontal lines, a tighter rhythm than the bars.
+                let lines = 12 + variant * 2
+                let step = s / CGFloat(lines)
+                for i in 0..<lines {
+                    path.addRect(CGRect(x: 0, y: step * (CGFloat(i) + 0.3), width: s, height: step * 0.28))
+                }
+            case .diagonal:
+                // 45° stripes, bottom-left to top-right.
+                let stripes = 5 + variant
+                let step = 2 * s / CGFloat(stripes)
+                let w = step / 2
+                for i in -(stripes / 2 + 1)...stripes {
+                    let x = CGFloat(i) * step
+                    path.move(to: CGPoint(x: x, y: s))
+                    path.addLine(to: CGPoint(x: x + w, y: s))
+                    path.addLine(to: CGPoint(x: x + w + s, y: 0))
+                    path.addLine(to: CGPoint(x: x + s, y: 0))
+                    path.closeSubpath()
+                }
+            case .split:
+                // Two flat fields, the hard edge off centre (38/62), either side.
+                let edge = s * (variant % 2 == 0 ? 0.38 : 0.62)
+                path.addRect(variant % 2 == 0
+                             ? CGRect(x: 0, y: 0, width: edge, height: s)
+                             : CGRect(x: edge, y: 0, width: s - edge, height: s))
             }
-            .frame(width: s, height: s)
-            .clipped()
+            ctx.fill(path, with: .color(figure))
         }
         .aspectRatio(1, contentMode: .fit)
+        .clipped()
     }
 }
 
