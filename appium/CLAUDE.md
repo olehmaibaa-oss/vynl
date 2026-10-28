@@ -81,6 +81,7 @@ appium/
                 ├── edit_release.feature     @edit-release
                 ├── genres.feature           @genres
                 ├── camelot.feature          @camelot
+                ├── covers.feature           @covers
                 ├── release_detail.feature   @release-detail
                 ├── tracks.feature           @tracks
                 ├── delete_release.feature   @delete
@@ -293,6 +294,17 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
   Selected when on) in one section per group (`trackForm.moodGroup` header). `TrackFormPage`
   `toggleMood` / `isMoodSelected` match the chip by label (scrolling `trackForm.form`),
   `moodGroups()` reads the headers.
+- **DR-5 covers + release screen (SCRUM-34), built** — the release screen lost its
+  LabeledContent rows. `ReleaseDetailPage.showsField` now reads `releaseDetail.title` /
+  `releaseDetail.artist` (label = value) and `releaseDetail.meta` (label "Label, X; Year, Y;
+  Status, Z", "—" when empty). `coverKind()` = `releaseDetail.cover` value ("image" /
+  "placeholder"). "Add track" (`releaseDetail.addTrackButton`) is now always shown, so the
+  "no tracks shows an empty state" scenario only proves the button exists. `covers.feature`
+  (@covers): the photo comes from `fixtures/cover.jpg` (step "a photo is in the library" runs
+  `simctl addmedia`); the system photo picker is out of process: its cells say visible=false
+  and an element click does nothing, so `pickNewestLibraryPhoto` taps the cell's centre with
+  `mobile: tap`. The iOS 26 simulator HAS a camera, so "camera not offered" runs with
+  `@no-camera`, which makes Hooks add the `-uitesting-noCamera` launch argument.
 - **DR-1 dark only (SCRUM-30), done** — no locator changes; the suite stayed green as-is.
 
 ---

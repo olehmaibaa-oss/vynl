@@ -23,6 +23,9 @@ struct AddReleaseView: View {
     @State private var label = ""
     @State private var yearText = ""
     @State private var status: ReleaseStatus = .owned
+    /// DR-5: already downscaled, with its label colour; written on Save only.
+    @State private var cover: Data?
+    @State private var coverColor: String?
 
     private var isSaveEnabled: Bool {
         !artist.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -40,6 +43,9 @@ struct AddReleaseView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("Cover") {
+                    CoverSlot(artist: artist, title: title, cover: $cover, coverColor: $coverColor)
+                }
                 Section("Required") {
                     TextField("Artist", text: $artist)
                         .accessibilityIdentifier("addRelease.artistField")
@@ -96,6 +102,8 @@ struct AddReleaseView: View {
                     label = release.label ?? ""
                     yearText = release.year.map { String($0) } ?? ""
                     status = release.status
+                    cover = release.cover
+                    coverColor = release.coverColor
                 }
             }
         }
@@ -121,10 +129,14 @@ struct AddReleaseView: View {
             )
             modelContext.insert(release)
             release.genres = genres
+            release.cover = cover
+            release.coverColor = cover == nil ? nil : coverColor
         case .edit(let release):
             release.artist = trimmedArtist
             release.title = trimmedTitle
             release.genres = genres
+            release.cover = cover
+            release.coverColor = cover == nil ? nil : coverColor
             release.label = trimmedLabel.isEmpty ? nil : trimmedLabel
             release.year = year
             release.status = status

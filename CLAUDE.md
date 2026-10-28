@@ -56,7 +56,7 @@ genres, Camelot keys, grouped moods, dark only. Decisions are in the PRD and Tec
 changelogs) and the review thread on SCRUM-28. Delivered as stories DR-1…DR-8 (SCRUM-30…37) and
 E2-S5 / E2-S6 (SCRUM-38, 39). **Done: DR-1 (dark only), DR-2 (schema v2). Built, in review:
 DR-3 (header), DR-4 (genre chips), DR-6 (Camelot wheel), E2-S5 (grouped vocabulary, 30 moods),
-E2-S6 (grouped mood chips in the track form).** The rest is not — see the data model below for what is "today" vs "planned".
+E2-S6 (grouped mood chips in the track form), DR-5 (covers, redrawn release screen).** The rest is not — see the data model below for what is "today" vs "planned".
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
@@ -124,7 +124,10 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
 - `genres: [Genre]` — many-to-many, inverse + nullify declared on `Genre.releases`. "At least one"
   is enforced by the form (DR-4). `genreNames` gives them A–Z.
 - `cover: Data?` — `@Attribute(.externalStorage)`; nil → a placeholder computed from artist +
-  title, never stored. Picked and downscaled in DR-5.
+  title, never stored. **DR-5 built:** `CoverSlot` in the release form (live placeholder,
+  PhotosPicker, camera only if `UIImagePickerController.isSourceTypeAvailable(.camera)` and not
+  `-uitesting-noCamera`, Remove); `CoverArt.prepare` downscales to 1200px JPEG and computes
+  `coverColor` before Save. Placeholder = Design System Sleeve (djb2 seed of "artist—title").
 - `coverColor: String?` — `"#RRGGBB"`: the colour that contrasts most with the average among the
   colours covering ≥ ~5% of the cover. Computed when a cover is saved (DR-5), cleared when it is
   removed; placeholders derive theirs from their seed and store nothing.
@@ -226,6 +229,15 @@ Header, trailing: grid/stack toggle and mood gear (Collection only), contextual 
   the card in place and opens the release from **Open release**; filter is a bar above the tab bar
   plus a sheet (E3); sort placement open (DR-8).
 - The mood vocabulary is a separate screen behind the gear, not a hamburger.
+
+### Release screen (DR-5, built)
+Drawn 28.10: 220pt die-cut `SleeveView` top-left with `RecordDisc` slid out right, glow in the
+label colour, title / artist / "LABEL · YEAR · STATUS" (missing parts left out), genre chips,
+TRACKS + count over a hairline, `TrackRowView` rows (position · title + moods · BPM · KeyChip),
+outline "Add track" (always shown), text "Delete release". Still a plain List (keeps
+swipe-to-delete, `releaseDetail.view` stays the scroll view). Shared pieces: `SleeveView`,
+`GeneratedSleeve`, `Plaque`, `LabelDisc`, `RecordDisc` (SleeveView.swift), `TrackRowView`,
+`VynlButtonStyle` / `VynlEmptyState` (VynlButton.swift).
 
 ### Appearance
 - **Dark only** (DR-1, SCRUM-30, built): `.preferredColorScheme(.dark)` and `.tint(Palette.ink)`

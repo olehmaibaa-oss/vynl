@@ -91,6 +91,54 @@ public class AddReleasePage extends BasePage {
         return AppiumBy.iOSNsPredicateString("name == '" + GENRE_CHIP + "' AND label ==[c] '" + genre + "'");
     }
 
+    // --- cover (DR-5) ---
+
+    private static final String COVER_SLOT = "addRelease.coverSlot";
+    private static final String LIBRARY_BUTTON = "addRelease.libraryButton";
+    private static final String CAMERA_BUTTON = "addRelease.cameraButton";
+    private static final String REMOVE_COVER_BUTTON = "addRelease.removeCoverButton";
+    /** A photo cell in the system photo picker (runs out of process, no ids of ours). */
+    private static final By PICKER_PHOTO = AppiumBy.iOSNsPredicateString(
+            "name == 'PXGGridLayout-Info' AND label BEGINSWITH 'Photo'");
+
+    /** "placeholder" or "image": the slot's accessibility value. */
+    public String coverKind() {
+        return find(COVER_SLOT).getAttribute("value");
+    }
+
+    /** The slot's label, "Artist, Title": what the generated sleeve is built from. */
+    public String coverName() {
+        return find(COVER_SLOT).getAttribute("label");
+    }
+
+    /**
+     * Opens the system photo picker and takes the newest photo; waits until the
+     * slot shows it. The library must hold a photo (CoverSteps adds the fixture).
+     */
+    public AddReleasePage pickNewestLibraryPhoto() {
+        tap(LIBRARY_BUTTON);
+        // The picker is another process shown in ours: its cells report
+        // visible=false and an element click goes nowhere. A tap at the cell's
+        // centre does land.
+        org.openqa.selenium.Rectangle cell =
+                waitFor(ExpectedConditions.presenceOfElementLocated(PICKER_PHOTO)).getRect();
+        driver.executeScript("mobile: tap", java.util.Map.of(
+                "x", cell.getX() + cell.getWidth() / 2,
+                "y", cell.getY() + cell.getHeight() / 2));
+        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
+                .until(d -> "image".equals(coverKind()));
+        return this;
+    }
+
+    public AddReleasePage removeCover() {
+        tap(REMOVE_COVER_BUTTON);
+        return this;
+    }
+
+    public boolean isCameraOffered() {
+        return !isGone(byId(CAMERA_BUTTON), Config.absenceTimeout());
+    }
+
     public AddReleasePage setLabel(String label) {
         type(LABEL_FIELD, label);
         return this;

@@ -37,6 +37,10 @@ public class ReleaseDetailPage extends BasePage {
     private static final String TRACK_ROW = "releaseDetail.trackRow";
     private static final String TRACK_MOODS = "releaseDetail.trackMoods";
     private static final String GENRE_CHIP = "releaseDetail.genreChip";
+    private static final String TITLE = "releaseDetail.title";
+    private static final String ARTIST = "releaseDetail.artist";
+    private static final String META = "releaseDetail.meta";
+    private static final String COVER = "releaseDetail.cover";
 
     /** What an empty optional field renders as. */
     public static final String EMPTY_PLACEHOLDER = "—";
@@ -52,10 +56,30 @@ public class ReleaseDetailPage extends BasePage {
     /**
      * Whether the given field shows the given value, e.g.
      * {@code showsField("Artist", "Surgeon")}.
+     *
+     * <p>DR-5 redrew the screen: title and artist are their own texts
+     * ({@code releaseDetail.title}, {@code releaseDetail.artist}, label = the
+     * value); label, year and status share the meta line, whose accessibility
+     * label spells each field out: "Label, Low Hum; Year, 2019; Status, Owned",
+     * with "—" for an empty optional.
      */
     public boolean showsField(String field, String value) {
-        return isVisibleWithin(byId(VIEW), staticTextWithLabel(fieldLabel(field, value)),
-                Config.elementTimeout());
+        switch (field) {
+            case "Title": return labelOf(TITLE).equals(value);
+            case "Artist": return labelOf(ARTIST).equals(value);
+            case "Label": case "Year": case "Status":
+                return List.of(labelOf(META).split("; ")).contains(fieldLabel(field, value));
+            default: throw new IllegalArgumentException("No such field on the release screen: " + field);
+        }
+    }
+
+    /** DR-5: "image" when the release has a cover photo, "placeholder" when it's generated. */
+    public String coverKind() {
+        return find(COVER).getAttribute("value");
+    }
+
+    private String labelOf(String id) {
+        return find(id).getAttribute("label");
     }
 
     /** DR-4: the genre chips, in display order (A–Z). Waits for the first chip. */

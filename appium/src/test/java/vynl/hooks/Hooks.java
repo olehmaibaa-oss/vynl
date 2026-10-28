@@ -3,6 +3,7 @@ package vynl.hooks;
 import io.appium.java_client.ios.IOSDriver;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
+import io.cucumber.java.Scenario;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import vynl.config.Config;
 import vynl.driver.DriverManager;
@@ -13,7 +14,7 @@ import java.util.Map;
 public class Hooks {
 
     @Before
-    public void setUp() {
+    public void setUp(Scenario scenario) {
         DesiredCapabilities caps = new DesiredCapabilities();
         caps.setCapability("platformName", "iOS");
         caps.setCapability("appium:automationName", "XCUITest");
@@ -27,7 +28,12 @@ public class Hooks {
         caps.setCapability("appium:usePrebuiltWDA", Config.usePrebuiltWda());
 
         // In-memory SwiftData store, so every run starts from a clean collection.
-        caps.setCapability("appium:processArguments", Map.of("args", List.of("-uitesting")));
+        // @no-camera scenarios: the app behaves as on a device without a camera
+        // (the iOS 26 simulator reports one).
+        List<String> args = scenario.getSourceTagNames().contains("@no-camera")
+                ? List.of("-uitesting", "-uitesting-noCamera")
+                : List.of("-uitesting");
+        caps.setCapability("appium:processArguments", Map.of("args", args));
 
         // No implicit wait on purpose — page objects wait explicitly, and mixing
         // the two makes timings unpredictable.
