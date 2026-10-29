@@ -63,12 +63,15 @@ struct CollectionView: View {
         // navigationTitle stays for VoiceOver and the back button.
         .hiddenNavigationTitle()
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                modeButton(.grid, symbol: "square.grid.2x2", label: "Grid")
-                modeButton(.stack, symbol: "rectangle.stack", label: "Stack")
-            }
-            if #available(iOS 26, *) {
-                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            // Nothing to switch while the collection is empty (canvas "Collection · empty").
+            if !releases.isEmpty {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    modeButton(.grid, symbol: "square.grid.2x2", label: "Grid")
+                    modeButton(.stack, symbol: "rectangle.stack", label: "Stack")
+                }
+                if #available(iOS 26, *) {
+                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                }
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 NavigationLink {
@@ -110,13 +113,24 @@ struct CollectionView: View {
     }
 
     private var emptyState: some View {
-        // Design System EmptyState copy; the button is the DS primary (square,
-        // inverted, 52pt), not a system capsule (design review 28.10).
+        // Canvas "Collection · empty" (28.10): empty sleeve outline with a faint
+        // record behind, copy, the DS primary button full width. Same in both
+        // modes; the toggle and the filter bar are hidden while empty.
         VynlEmptyState(title: "No records yet",
-                       message: "Add your first release to start filtering and building crates.") {
+                       message: "Add a record with its cover and tracks, then dig through it here by BPM, key and mood.") {
+            EmptySleeveArt()
+        } actions: {
             Button("Add release") { showAddRelease = true }
                 .buttonStyle(.vynlPrimary)
                 .accessibilityIdentifier("collection.addReleaseButton")
         }
+        .background {
+            // Faint ink glow behind the sleeve.
+            RadialGradient(colors: [Palette.ink.opacity(0.06), Palette.ink.opacity(0)],
+                           center: UnitPoint(x: 0.5, y: 0.36), startRadius: 0, endRadius: 260)
+                .ignoresSafeArea()
+                .accessibilityHidden(true)
+        }
+        .background(Palette.bg)
     }
 }

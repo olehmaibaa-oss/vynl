@@ -241,6 +241,11 @@ Header, trailing: grid/stack toggle and mood gear (Collection only), contextual 
   the current card expands it (`ExpandedRecordView`): sleeve up-left, disc out right, label · year,
   genres, Hide tracks, tracklist (or a muted "No tracks yet", `collection.noTracks`), Open release. The expanded sleeve is a tap gesture, not a Button, so a swipe that
   starts on it moves to the next record.
+- **Empty collection (canvas "Collection · empty", 28.10, built):** `VynlEmptyState` with an
+  illustration slot (`EmptySleeveArt`: empty die-cut sleeve outline, faint grooved record behind),
+  "No records yet", one line of copy, full-width primary "Add release". The grid/stack toggle and
+  the filter bar are hidden while the collection is empty; the remembered mode applies again with
+  the first record.
 - **Sort (DR-8, built):** `RecordSort` (artist A–Z default / Z–A, title, year oldest first with
   no-year last, recently added = `dateAdded` newest first; ties fall back to artist then title),
   `@AppStorage("collectionSort")`, reset to A–Z on `-uitesting` launches. Entry point (PO 28.10):

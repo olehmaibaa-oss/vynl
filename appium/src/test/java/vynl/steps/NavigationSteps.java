@@ -46,6 +46,12 @@ public class NavigationSteps {
                 "Collection screen not shown");
     }
 
+    @Then("there is no grid \\/ stack toggle and no filter bar")
+    public void thereIsNoToggleAndNoFilterBar() {
+        assertTrue(new CollectionPage(DriverManager.get()).isModeToggleAndFilterBarGone(),
+                "The empty collection shows the grid / stack toggle or the filter bar");
+    }
+
     @Then("the moods and add buttons are on the right of the header")
     public void theHeaderActionsAreOnTheRight() {
         assertTrue(new CollectionPage(DriverManager.get()).areHeaderActionsOnTheRight(),

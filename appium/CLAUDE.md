@@ -187,7 +187,8 @@ These are set in the Swift code and are the contract between app and tests. Matc
   `filterSheet.applyButton` applies (a swipe down discards)
 - `collection.hideTracksButton`, `collection.trackList`, `collection.trackRow` (label "A1, Title"),
   `collection.openReleaseButton` — expanded stack card
-- `collection.addReleaseButton` — empty-state "Add Release" CTA
+- `collection.addReleaseButton` — empty-state "Add release" CTA; while empty there is no
+  `collection.gridModeButton` / `stackModeButton` and no `filter.bar`
 - `collection.toolbarAddButton` — toolbar "+"
 
 **Add / edit release form**

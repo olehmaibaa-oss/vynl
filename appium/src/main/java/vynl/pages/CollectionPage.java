@@ -80,6 +80,13 @@ public class CollectionPage extends BasePage {
         return isVisible(ADD_RELEASE_BUTTON);
     }
 
+    /** The empty collection has nothing to switch or filter, so neither control exists. */
+    public boolean isModeToggleAndFilterBarGone() {
+        return isGone(byId(GRID_MODE_BUTTON), Config.absenceTimeout())
+                && isGone(byId(STACK_MODE_BUTTON), Config.absenceTimeout())
+                && isGone(byId("filter.bar"), Config.absenceTimeout());
+    }
+
     /** Same check on the short budget, for loops that stop once the collection is empty. */
     public boolean isEmptyStateQuick() {
         return isVisible(byId(ADD_RELEASE_BUTTON), Config.absenceTimeout());

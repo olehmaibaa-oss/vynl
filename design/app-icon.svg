@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+<radialGradient id="iconGlow" cx="0.42" cy="0.45" r="0.7"><stop offset="0" stop-color="#1d4f58" stop-opacity="0.55"/><stop offset="1" stop-color="#1d4f58" stop-opacity="0"/></radialGradient>
+<radialGradient id="iconSheen" cx="0.3" cy="0.25" r="0.9"><stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1024" height="1024" fill="#0d0d0c"/>
+<rect width="1024" height="1024" fill="url(#iconGlow)"/>
+<circle cx="650" cy="512" r="262" fill="#121110"/>
+<circle cx="650" cy="512" r="236" fill="none" stroke="#24221f" stroke-width="3"/>
+<circle cx="650" cy="512" r="204" fill="none" stroke="#24221f" stroke-width="3"/>
+<circle cx="650" cy="512" r="172" fill="none" stroke="#24221f" stroke-width="3"/>
+<circle cx="650" cy="512" r="140" fill="none" stroke="#24221f" stroke-width="3"/>
+<circle cx="650" cy="512" r="262" fill="url(#iconSheen)"/>
+<circle cx="650" cy="512" r="92" fill="#e28b63"/>
+<circle cx="650" cy="512" r="13" fill="#0d0d0c"/>
+<path d="M150 252h520v520H150z M410 420a92 92 0 1 0 0.01 0z" fill="#f2efe9" fill-rule="evenodd"/>
+</svg>

@@ -20,6 +20,12 @@ Feature: Navigation
     Given the app is launched
     Then the moods and add buttons are on the right of the header
 
+  # Canvas "Collection · empty" (28.10): nothing to switch or filter yet.
+  Scenario: The empty collection shows only the moods and add buttons
+    Given the app is launched
+    Then I see the collection screen
+    And there is no grid / stack toggle and no filter bar
+
   Scenario: Crates has a large section title and no add button
     Given the app is launched
     When I switch to the Crates tab
