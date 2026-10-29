@@ -71,7 +71,10 @@ struct CollectionView: View {
                 releaseToOpen = release
                 sheetRelease = nil
             }
-            .navigationTransition(.zoom(sourceID: release.persistentModelID, in: zoom))
+            // No zoom: with a partial detent iOS fades the sheet in instead of
+            // zooming, which read as "it just appears" on a device (PO, 29.10).
+            // The standard slide up from the bottom; the record still slides
+            // out of the sleeve inside.
             .presentationDetents([.fraction(0.85), .large])
             .presentationDragIndicator(.visible)
             .presentationBackground(Palette.surface)

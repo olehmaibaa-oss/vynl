@@ -246,7 +246,7 @@ Header, trailing: grid/stack toggle and mood gear (Collection only), contextual 
   appear and when the free height changes (the filter bar arrives with the first record).
 - **Record sheet (SCRUM-42, built; canvas "Record sheet", Tech Spec v7 §3):** a tap on a grid tile
   or on the stack's current card opens `RecordSheetView` as a sheet
-  (`.presentationDetents([.fraction(0.85), .large])`, zoom from the sleeve). × top right or a swipe
+  (`.presentationDetents([.fraction(0.85), .large])`, slides up from the bottom: no zoom, iOS only fades a partial-detent sheet in). × top right or a swipe
   down closes it; the carousel doesn't move while it's up. Content: sleeve with the record sliding
   out, title, artist, label · year, genres, TRACKS + count, track rows, "No tracks yet" when empty,
   pinned Open release (dismisses, then `CollectionView` pushes the release via
