@@ -62,6 +62,18 @@ public class CoverSteps {
         form().fillRequired(Flows.ARTIST, Flows.TITLE, Flows.GENRE).pickNewestLibraryPhoto();
     }
 
+    @When("I fill the release, pick the newest photo and cancel the crop")
+    public void iPickAndCancelTheCrop() {
+        AddReleasePage form = form().fillRequired(Flows.ARTIST, Flows.TITLE, Flows.GENRE).openNewestLibraryPhoto();
+        assertTrue(form.isCropScreenShown(), "the crop screen didn't open");
+        form.cancelCrop();
+    }
+
+    @Then("the cover slot still shows the placeholder")
+    public void theSlotStillShowsThePlaceholder() {
+        assertEquals("placeholder", form().coverKind());
+    }
+
     @Given("a release with a cover exists")
     public void aReleaseWithACoverExists() {
         collection().tapAddFromEmptyState()

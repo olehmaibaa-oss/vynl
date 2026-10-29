@@ -18,6 +18,13 @@ Feature: Covers
     And I save the release and open it
     Then the release shows a cover image
 
+  # COV-3 (SCRUM-59): a library photo goes through the crop screen first.
+  Scenario: Cancelling the crop leaves the form unchanged
+    Given a photo is in the library
+    And I am on the add-release form
+    When I fill the release, pick the newest photo and cancel the crop
+    Then the cover slot still shows the placeholder
+
   Scenario: Remove a cover
     Given a photo is in the library
     And a release with a cover exists

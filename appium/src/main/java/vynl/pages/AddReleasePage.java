@@ -112,11 +112,24 @@ public class AddReleasePage extends BasePage {
         return find(COVER_SLOT).getAttribute("label");
     }
 
+    private static final String CROP_USE = "coverCrop.useButton";
+    private static final String CROP_CANCEL = "coverCrop.cancelButton";
+
     /**
-     * Opens the system photo picker and takes the newest photo; waits until the
-     * slot shows it. The library must hold a photo (CoverSteps adds the fixture).
+     * Opens the system photo picker, takes the newest photo and accepts the crop
+     * screen as it opens (COV-3: centred square); waits until the slot shows it.
+     * The library must hold a photo (CoverSteps adds the fixture).
      */
     public AddReleasePage pickNewestLibraryPhoto() {
+        openNewestLibraryPhoto();
+        tap(CROP_USE);
+        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
+                .until(d -> coverKind().startsWith("image"));
+        return this;
+    }
+
+    /** Picks the newest photo and stops on the crop screen (COV-3). */
+    public AddReleasePage openNewestLibraryPhoto() {
         tap(LIBRARY_BUTTON);
         // The picker is another process shown in ours: its cells report
         // visible=false and an element click goes nowhere. A tap at the cell's
@@ -126,8 +139,18 @@ public class AddReleasePage extends BasePage {
         driver.executeScript("mobile: tap", java.util.Map.of(
                 "x", cell.getX() + cell.getWidth() / 2,
                 "y", cell.getY() + cell.getHeight() / 2));
-        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
-                .until(d -> coverKind().startsWith("image"));
+        findVisible(CROP_USE);
+        return this;
+    }
+
+    public boolean isCropScreenShown() {
+        return isVisible(CROP_USE);
+    }
+
+    /** Cancel on the crop screen: back to the form, nothing applied. */
+    public AddReleasePage cancelCrop() {
+        tap(CROP_CANCEL);
+        isGone(byId(CROP_USE), Config.elementTimeout());
         return this;
     }
 

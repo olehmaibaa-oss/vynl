@@ -142,6 +142,11 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   the largest centred square as the cover (crop screens in COV-2/3 will place it), cuts the label
   from its centre and computes `coverColor` from the label. Cleared with the cover. Sleeve value
   "image+label" when present.
+- **Crop screen (COV-3, SCRUM-59):** a library photo (and a camera shot) opens `CoverCropView`:
+  the photo under `CropOverlay` (square frame + dashed label circle at `labelRatio`, dimmed
+  surround), drag to move, pinch to zoom (1–5×), always covering the square. Use →
+  `CropGeometry.cropRect` (image pixels) → `CoverArt.prepare(image, square:)`. Cancel (Retake for
+  the camera) changes nothing. Ids `coverCrop.view`, `coverCrop.useButton`, `coverCrop.cancelButton`.
 - `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
 

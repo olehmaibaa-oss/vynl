@@ -24,6 +24,10 @@ struct CoverSlot: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var showCamera = false
     @State private var showCameraDenied = false
+    /// The photo being fitted into the square (COV-3), from the library or the camera.
+    @State private var cropping: CropSource?
+    /// A camera shot waiting for the camera to close before the crop opens.
+    @State private var shot: UIImage?
 
     /// `-uitesting-noCamera` lets a UI test see the app as on a device without a
     /// camera (the iOS 26 simulator reports one).
@@ -76,16 +80,35 @@ struct CoverSlot: View {
         .onChange(of: pickerItem) { _, item in
             guard let item else { return }
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self) {
-                    apply(data)
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    cropping = CropSource(image: image, fromCamera: false)
                 }
+                // Lets the same photo be picked again after a Cancel.
+                pickerItem = nil
             }
         }
-        .fullScreenCover(isPresented: $showCamera) {
-            CameraPicker { image in
-                if let data = image.jpegData(compressionQuality: 0.9) { apply(data) }
+        .fullScreenCover(isPresented: $showCamera, onDismiss: {
+            if let image = shot {
+                shot = nil
+                cropping = CropSource(image: image, fromCamera: true)
             }
-            .ignoresSafeArea()
+        }) {
+            CameraPicker { image in shot = image }
+                .ignoresSafeArea()
+        }
+        .fullScreenCover(item: $cropping) { source in
+            CoverCropView(image: source.image,
+                          cancelTitle: source.fromCamera ? "Retake" : "Cancel",
+                          useTitle: source.fromCamera ? "Use photo" : "Use",
+                          onCancel: {
+                              cropping = nil
+                              if source.fromCamera { showCamera = true }
+                          },
+                          onUse: { square in
+                              apply(source.image, square: square)
+                              cropping = nil
+                          })
         }
         .alert("Camera access is off", isPresented: $showCameraDenied) {
             Button("Open Settings") {
@@ -116,8 +139,8 @@ struct CoverSlot: View {
         }
     }
 
-    private func apply(_ data: Data) {
-        guard let prepared = CoverArt.prepare(data) else { return }
+    private func apply(_ image: UIImage, square: CGRect) {
+        guard let prepared = CoverArt.prepare(image, square: square) else { return }
         cover = prepared.cover
         labelImage = prepared.label
         coverColor = prepared.color
@@ -154,4 +177,11 @@ struct CameraPicker: UIViewControllerRepresentable {
             parent.dismiss()
         }
     }
+}
+
+/// A photo on its way into the crop screen.
+struct CropSource: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let fromCamera: Bool
 }
