@@ -153,6 +153,12 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   starts from; the shot opens `CoverCropView` with Retake / Use photo. Permission flow from
   SCRUM-40 stays. Ids `recordCamera.preview`, `.shutterButton`, `.flashButton`, `.closeButton`.
   Manual on a device only (no camera on the simulator; Appium keeps `@no-camera`).
+- **Track position picker (TRK-1, SCRUM-60):** `PositionPicker` in the track form: side chips A–F
+  + number chips 1–9 (`trackForm.sideChip` / `trackForm.numberChip`, label = value, Selected;
+  number value "taken" when used on the release), the chosen value above them
+  (`trackForm.positionValue`), and Other… (`trackForm.otherPositionButton`) for free text in
+  `trackForm.positionField`. A new track opens with `TrackPosition.nextFree` (A1, A2 → A3). Stored
+  as before (`Track.position` text), no schema change.
 - `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
 

@@ -460,3 +460,7 @@ here, and never bend a scenario until it goes green.
 4. **Verify by running.** After changes, run `mvn test` and report the real result rather than
    assuming it passes.
 5. Keep changes scoped and explain anything that goes beyond the task so it can be confirmed.
+
+- **TRK-1 (SCRUM-60):** `TrackFormPage.setPosition("A2")` taps side + number chips; anything else
+  goes through Other… + the text field. A new track opens with the next free position picked, so
+  "only the title" scenarios call `clearPosition()` (Other… empty) first.

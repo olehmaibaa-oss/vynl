@@ -33,6 +33,16 @@ struct TrackFormView: View {
         !title.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    /// Positions already used on this release, the edited track's own excluded.
+    private var takenPositions: Set<String> {
+        switch mode {
+        case .add(let release):
+            return Set(release.tracks.map(\.position))
+        case .edit(let track):
+            return Set((track.release?.tracks ?? []).filter { $0 !== track }.map(\.position))
+        }
+    }
+
     private var navigationTitle: String {
         switch mode {
         case .add: return "Add Track"
@@ -44,8 +54,8 @@ struct TrackFormView: View {
         NavigationStack {
             Form {
                 Section("Required") {
-                    TextField("Position", text: $position)
-                        .accessibilityIdentifier("trackForm.positionField")
+                    // TRK-1: side + number instead of typing; Other… for odd ones.
+                    PositionPicker(position: $position, taken: takenPositions)
                     TextField("Title", text: $title)
                         .accessibilityIdentifier("trackForm.titleField")
                 }
@@ -100,6 +110,9 @@ struct TrackFormView: View {
                 // including a cleared key (found by camelot.feature, DR-6).
                 guard !loaded else { return }
                 loaded = true
+                if case .add(let release) = mode {
+                    position = TrackPosition.nextFree(after: release.tracks.map(\.position))
+                }
                 if case .edit(let track) = mode {
                     position = track.position
                     title = track.title
