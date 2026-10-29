@@ -22,7 +22,7 @@ struct vynlApp: App {
                 UserDefaults.standard.set(RecordSort.default.rawValue, forKey: RecordSort.storageKey)
             }
         } else {
-            // Schema changed since this store was written → reset it (Tech Spec §4).
+            // A pre-v2 store (simulator-era builds) is reset; v2+ migrates (TECH-1).
             StoreReset.resetIfSchemaChanged(storeURL: AppSchema.storeURL, flags: .standard,
                                             currentVersion: AppSchema.version)
             try? FileManager.default.createDirectory(at: URL.applicationSupportDirectory,
@@ -31,7 +31,12 @@ struct vynlApp: App {
         }
 
         do {
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            // On disk: through the migration plan, so a schema change never wipes a
+            // real collection (TECH-1, SCRUM-43).
+            let container = isUITesting
+                ? try ModelContainer(for: schema, configurations: [modelConfiguration])
+                : try ModelContainer(for: schema, migrationPlan: VynlMigrationPlan.self,
+                                     configurations: [modelConfiguration])
             // An in-memory UI-test store is new on every launch, so its "seeded"
             // flag must be too — otherwise a persisted flag from an earlier run
             // would leave the fresh store without the default moods.

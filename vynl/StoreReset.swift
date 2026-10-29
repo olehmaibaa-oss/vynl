@@ -2,15 +2,17 @@
 //  StoreReset.swift
 //  vynl
 //
-//  Tech Spec §4: until the app holds a real collection, a schema change resets
-//  the store instead of migrating it. DR-2 (SCRUM-31) is the first such change.
+//  Tech Spec §4: until the app held a real collection, a schema change reset
+//  the store instead of migrating it. DR-2 (SCRUM-31) was the first such change
+//  and, since TECH-1 (SCRUM-43), the last: `AppSchema.version` is frozen at 2,
+//  so only pre-v2 stores are reset; v2+ goes through `VynlMigrationPlan`.
 //
 //  The reset is keyed on an explicit schema version, not on "the container
 //  failed to open": a failure for any other reason still crashes loudly, so a
 //  real migration bug can't hide behind it.
 //
-//  REMOVE this file once VersionedSchema + SchemaMigrationPlan arrive (the
-//  first build that stores a real collection).
+//  Kept for simulator-era v1 stores. Never bump `currentVersion` again: a
+//  model change is a new SchemaV<n> + migration stage (AppSchema.swift).
 //
 
 import Foundation

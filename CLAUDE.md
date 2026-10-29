@@ -129,9 +129,12 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   bit 0 flips the ground, `(seed >> 1) % 4` picks bars / lines / diagonal / split. **No circles**
   on a placeholder: the die-cut is the only circle (design review 28.10). Its label colour is one of the
   24 Camelot key colours, `CamelotKey.allCases[(seed >> 4) % 24]` (`CoverArt.placeholderLabelKey`).
-- `coverColor: String?` — `"#RRGGBB"`: the colour that contrasts most with the average among the
-  colours covering ≥ ~5% of the cover. Computed when a cover is saved (DR-5), cleared when it is
-  removed; placeholders derive theirs from their seed and store nothing.
+- `coverColor: String?` — `"#RRGGBB"`, the label colour for a photo cover (`CoverArt.coverColor`,
+  SCRUM-41): the most vivid colour (chroma × √share, ≥ ~1.2% of the image, never near-black or
+  near-white), with the centre counting double so a record photo gives its centre label; no vivid
+  colour → the old "contrasts most with the average, ≥ 5%" rule without black/white; nothing
+  usable → nil (the label falls back to the placeholder key colour). Computed when a cover is
+  saved, cleared when it is removed; placeholders derive theirs from their seed and store nothing.
 - `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
 
@@ -194,18 +197,25 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
 - references one Release; holds the set of marked Tracks from that release
 - guarantees integrity: marked tracks are physically tied to their release, no orphans
 
-### Data migrations (Tech Spec §4)
-- **Now (no real data yet):** a schema change resets the store. `StoreReset` (DR-2) does it,
-  keyed on an explicit version: `AppSchema.version` vs `storeSchemaVersion` in UserDefaults (a
-  store with no recorded version is v1). Different → delete the store files (+ `-wal`, `-shm`,
-  the external-storage folder), clear the mood "seeded" flag, log it (`dev.vynl` / `store`). A
-  container that fails to open for any other reason still crashes (`fatalError`), so a real bug
-  isn't swallowed. **Any model change: bump `AppSchema.version`.** Store path:
-  `AppSchema.storeURL` (Application Support/default.store). `-uitesting` is in-memory, no reset.
-  Checked on the simulator with a real v1 store: v2 resets it and starts with the seeded moods;
-  the same store without the reset does not open.
-- **From the first build that holds a real collection:** `VersionedSchema` + `SchemaMigrationPlan`,
-  every schema change a new version with a migration. The reset goes away then.
+### Data migrations (Tech Spec §4, TECH-1 / SCRUM-43, built)
+The app holds real collections (the PO's iPhone since 29.10), so **a schema change never resets
+the store any more**.
+- `AppSchema.swift`: `SchemaV2: VersionedSchema` (the live models), `VynlMigrationPlan`
+  (`schemas = [SchemaV2]`, no stages yet), `AppSchema.Current`, `AppSchema.container(url:)`.
+  The on-disk container opens through the plan; `-uitesting` stays in-memory without it.
+- **Any model change:** (1) freeze the current models as nested copies in `SchemaV<n>`,
+  (2) add `SchemaV<n+1>` with the live models + a stage (`.lightweight` for new optional fields /
+  entities, `.custom` when data moves), (3) point `AppSchema.Current` at it, (4) add a
+  `MigrationTests` case that writes a store with the old version and opens it with the plan.
+  E4 (Crate, CrateItem) is the first: a lightweight v2 → v3 (template in `VynlMigrationPlan`).
+- `StoreReset` only resets **pre-v2** stores (simulator-era builds). `AppSchema.version` is frozen
+  at 2; never bump it again.
+- **Saves are explicit:** every form Save and every delete calls `modelContext.persist()`
+  (`ModelContext+Persist.swift`). SwiftData's autosave alone left a new release in memory: an app
+  killed a few seconds after Save (update, Xcode re-run, crash) lost it. Checked on the simulator.
+- Checked: a store written by the pre-TECH-1 build (unversioned Schema) opens through the plan
+  with its releases, tracks, moods and covers (`MigrationTests`, and an install-over upgrade on the
+  simulator).
 
 ---
 

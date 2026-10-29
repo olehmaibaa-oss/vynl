@@ -102,6 +102,7 @@ struct MoodFormView: View {
         case .rename(let mood):
             mood.name = normalized
         }
+        modelContext.persist()
         dismiss()
     }
 

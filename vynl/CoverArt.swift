@@ -43,37 +43,71 @@ enum CoverArt {
         }
     }
 
-    // MARK: - coverColor (Tech Spec §2)
+    // MARK: - coverColor (Tech Spec §2, SCRUM-41)
 
-    /// Among the colours that cover at least `minShare` of the image, the one
-    /// that differs most from the image's average colour. Nil for an image that
-    /// can't be read.
+    /// The label colour for a photo. SCRUM-41: the DR-5 rule ("contrasts most
+    /// with the average, ≥ 5% of the image") picked plain black on most photos
+    /// of a record, where the black disc or a dark background dominates and the
+    /// coloured centre label is a few percent of the frame. Now:
     ///
-    /// The image is reduced to 32×32 and its pixels are bucketed at 3 bits per
-    /// channel; a bucket's colour is the mean of its pixels. "Differs most" is the
-    /// Euclidean distance in RGB, which is enough to pick a contrasting accent.
-    static func coverColor(of image: UIImage, minShare: Double = 0.05) -> (r: Double, g: Double, b: Double)? {
-        guard let pixels = rgbPixels(of: image, side: 32), !pixels.isEmpty else { return nil }
-        var buckets: [Int: (n: Int, r: Double, g: Double, b: Double)] = [:]
-        var sum = (r: 0.0, g: 0.0, b: 0.0)
-        for p in pixels {
-            sum.r += p.r; sum.g += p.g; sum.b += p.b
+    /// 1. Vivid colours win: buckets with enough chroma, not near-black or
+    ///    near-white, covering at least `minVividShare` (a centre label counts).
+    ///    Score = chroma × √share, so a strong colour beats a bigger dull one.
+    /// 2. The centre counts double: a photo of a record is usually centred on
+    ///    its label.
+    /// 3. No vivid colour (a black-and-white sleeve): the old contrast rule, but
+    ///    never near-black or near-white.
+    /// 4. Nothing usable: nil, so the label falls back to the placeholder's key
+    ///    colour instead of black.
+    ///
+    /// The image is reduced to 48×48 and bucketed at 3 bits per channel; a
+    /// bucket's colour is the mean of its pixels.
+    static func coverColor(of image: UIImage, minVividShare: Double = 0.012,
+                           minShare: Double = 0.05) -> (r: Double, g: Double, b: Double)? {
+        let side = 48
+        guard let pixels = rgbPixels(of: image, side: side), !pixels.isEmpty else { return nil }
+        var buckets: [Int: (n: Double, r: Double, g: Double, b: Double)] = [:]
+        var sum = (r: 0.0, g: 0.0, b: 0.0), total = 0.0
+        let c = Double(side - 1) / 2, centreRadius = Double(side) * 0.25
+        for (i, p) in pixels.enumerated() {
+            let x = Double(i % side) - c, y = Double(i / side) - c
+            let w = (x * x + y * y).squareRoot() <= centreRadius ? 2.0 : 1.0
+            sum.r += p.r * w; sum.g += p.g * w; sum.b += p.b * w; total += w
             let key = (Int(p.r * 7.999) << 6) | (Int(p.g * 7.999) << 3) | Int(p.b * 7.999)
             let cur = buckets[key] ?? (0, 0, 0, 0)
-            buckets[key] = (cur.n + 1, cur.r + p.r, cur.g + p.g, cur.b + p.b)
+            buckets[key] = (cur.n + w, cur.r + p.r * w, cur.g + p.g * w, cur.b + p.b * w)
         }
-        let count = Double(pixels.count)
-        let average = (r: sum.r / count, g: sum.g / count, b: sum.b / count)
-        let big = buckets.values.filter { Double($0.n) / count >= minShare }
-        let candidates = big.isEmpty ? Array(buckets.values) : big
-        let best = candidates.max { a, b in
-            distance(mean(a), average) < distance(mean(b), average)
+        let average = (r: sum.r / total, g: sum.g / total, b: sum.b / total)
+        let colours = buckets.values.map { (colour: mean($0), share: $0.n / total) }
+
+        let vivid = colours.filter { $0.share >= minVividShare && isVivid($0.colour) }
+        if let best = vivid.max(by: { chroma($0.colour) * $0.share.squareRoot() < chroma($1.colour) * $1.share.squareRoot() }) {
+            return best.colour
         }
-        return best.map(mean)
+        let usable = colours.filter { $0.share >= minShare && !isNearBlackOrWhite($0.colour) }
+        return usable.max { distance($0.colour, average) < distance($1.colour, average) }?.colour
     }
 
-    private static func mean(_ b: (n: Int, r: Double, g: Double, b: Double)) -> (r: Double, g: Double, b: Double) {
-        (b.r / Double(b.n), b.g / Double(b.n), b.b / Double(b.n))
+    static func chroma(_ c: (r: Double, g: Double, b: Double)) -> Double {
+        max(c.r, c.g, c.b) - min(c.r, c.g, c.b)
+    }
+
+    static func luma(_ c: (r: Double, g: Double, b: Double)) -> Double {
+        0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
+    }
+
+    /// Saturated enough to read as a colour, and neither black nor white.
+    static func isVivid(_ c: (r: Double, g: Double, b: Double)) -> Bool {
+        chroma(c) >= 0.18 && !isNearBlackOrWhite(c)
+    }
+
+    static func isNearBlackOrWhite(_ c: (r: Double, g: Double, b: Double)) -> Bool {
+        let l = luma(c)
+        return l < 0.12 || (l > 0.9 && chroma(c) < 0.12)
+    }
+
+    private static func mean(_ b: (n: Double, r: Double, g: Double, b: Double)) -> (r: Double, g: Double, b: Double) {
+        (b.r / b.n, b.g / b.n, b.b / b.n)
     }
 
     private static func distance(_ a: (r: Double, g: Double, b: Double), _ b: (r: Double, g: Double, b: Double)) -> Double {
