@@ -122,11 +122,15 @@ enum CoverArt {
         return hash
     }
 
-    /// The label colour of a placeholder: a hue from the seed at a fixed, muted
-    /// strength, so generated sleeves stay quiet next to real covers. Not a key
-    /// colour (those belong to keys only).
+    /// The key whose colour a placeholder's label takes: one of the 24 Camelot
+    /// keys, picked by the seed (design, SCRUM-34 28.10).
+    static func placeholderLabelKey(seed: UInt32) -> CamelotKey {
+        CamelotKey.allCases[Int((seed >> 4) % UInt32(CamelotKey.allCases.count))]
+    }
+
+    /// The label colour of a placeholder: a Camelot key colour from the seed.
     static func placeholderLabelColor(seed: UInt32) -> Color {
-        Color(hue: Double((seed >> 4) % 360) / 360, saturation: 0.42, brightness: 0.86)
+        Palette.key(placeholderLabelKey(seed: seed).code)
     }
 
     /// What shows through the die-cut for this release.

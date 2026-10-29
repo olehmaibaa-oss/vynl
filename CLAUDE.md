@@ -130,7 +130,8 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   `-uitesting-noCamera`, Remove); `CoverArt.prepare` downscales to 1200px JPEG and computes
   `coverColor` before Save. Placeholder = Design System Sleeve (djb2 seed of "artist—title"):
   bit 0 flips the ground, `(seed >> 1) % 4` picks bars / lines / diagonal / split. **No circles**
-  on a placeholder: the die-cut is the only circle (design review 28.10).
+  on a placeholder: the die-cut is the only circle (design review 28.10). Its label colour is one of the
+  24 Camelot key colours, `CamelotKey.allCases[(seed >> 4) % 24]` (`CoverArt.placeholderLabelKey`).
 - `coverColor: String?` — `"#RRGGBB"`: the colour that contrasts most with the average among the
   colours covering ≥ ~5% of the cover. Computed when a cover is saved (DR-5), cleared when it is
   removed; placeholders derive theirs from their seed and store nothing.

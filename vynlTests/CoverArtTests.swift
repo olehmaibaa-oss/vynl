@@ -69,6 +69,14 @@ struct CoverArtTests {
         #expect(a != CoverArt.seed(artist: "Regis", title: "Internal Empire"))
     }
 
+    @Test func placeholderLabelIsAKeyColourFromTheSeed() {
+        #expect(CoverArt.placeholderLabelKey(seed: 0) == .k1A)
+        #expect(CoverArt.placeholderLabelKey(seed: 15 << 4) == .k8B)
+        #expect(CoverArt.placeholderLabelKey(seed: 24 << 4) == .k1A)
+        let seeds = (0..<200).map { CoverArt.seed(artist: "Artist \($0)", title: "T") }
+        #expect(Set(seeds.map(CoverArt.placeholderLabelKey(seed:))).count == 24)
+    }
+
     @Test func hexRoundTrips() throws {
         #expect(CoverArt.hex((1, 0.5, 0)) == "#FF8000")
         #expect(CoverArt.color(hex: "#FF8000") != nil)
