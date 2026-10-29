@@ -5,7 +5,7 @@
 //  DR-7 (SCRUM-36), grid mode as drawn 28.10 (Tech Spec §3): 2 columns, 16 at the
 //  edges, 12 between columns, 24 between rows. A tile is the die-cut sleeve with
 //  its label (no disc, no plaques), title (15) and artist (13, ink-muted) under
-//  it, one line each. A tap opens the release with the zoom transition.
+//  it, one line each. A tap opens the record sheet (SCRUM-42) with a zoom from the sleeve.
 //
 
 import SwiftUI
@@ -14,6 +14,8 @@ import SwiftData
 struct CollectionGridView: View {
     let releases: [Release]
     let zoom: Namespace.ID
+    /// Opens the record sheet (SCRUM-42).
+    let onOpen: (Release) -> Void
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
@@ -21,7 +23,7 @@ struct CollectionGridView: View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 24) {
                 ForEach(releases) { release in
-                    NavigationLink(value: release) {
+                    Button { onOpen(release) } label: {
                         tile(release)
                     }
                     .buttonStyle(.plain)

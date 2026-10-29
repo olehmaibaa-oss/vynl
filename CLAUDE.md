@@ -61,12 +61,9 @@ stack), DR-8 (sort).** The rest is not — see the data model below for what is 
 
 **Collection draft v0 (27.10, comments on SCRUM-28/31/32/34/36/37, Tech Spec v4).** Mockup: Claude
 Design "VYNL Font Options" (https://claude.ai/artifact/KcWS1eMYnvkvJujGf7Fd1a).
-- **Stack (DR-7):** a card is **collapsed** by default: die-cut sleeve, artist, title, "N tracks"
-  ("N/M" while a filter is active). A tap **expands it in place**: the record slides out, label ·
-  year, genres, tracklist. It collapses on a tap, on **Hide tracks**, or on a swipe to the next
-  card. One card expanded at a time; the stack opens collapsed. A long tracklist scrolls inside the
-  card. The release opens from the **Open release** button (in the grid a tap still opens it).
-  **Add to crate** is hidden until E4.
+- **Stack (DR-7):** the current card shows the die-cut sleeve, artist, title, "N tracks"
+  ("N/M" while a filter is active). **Superseded by SCRUM-42 (29.10):** a tap no longer expands it
+  in place, it opens the record sheet (see "Record sheet" below), in the grid too.
 - **No visible Collection title (DR-3):** `navigationTitle` is kept for VoiceOver and the back
   button but not drawn. Crates keeps its large title.
 - **Filter = a bar above the tab bar + a sheet (E3):** iOS 26 `tabViewBottomAccessory`, iOS 18–25
@@ -230,17 +227,21 @@ Header, trailing: grid/stack toggle and mood gear (Collection only), contextual 
 - **Grid / stack (DR-7, built):** `CollectionView` switches `CollectionGridView` /
   `CollectionStackView`; the mode is `@AppStorage("collectionMode")` (`-uitesting` resets it to
   grid unless `-uitesting-keepMode`). Grid: 2 columns, 16/12/24, die-cut sleeve without disc or
-  plaques, title 15 semibold + artist 13 muted; a tap pushes with a zoom transition from the
-  sleeve. Stack: vertical view-aligned carousel, **one record per swipe**
+  plaques, title 15 semibold + artist 13 muted; a tap opens the record sheet. Stack: vertical view-aligned carousel, **one record per swipe**
   (`.viewAligned(limitBehavior: .alwaysByOne)`), 300pt sleeve, neighbours tilt / scale / darken via
   `scrollTransition` (Reduce Motion: fade only), loops from 4 records (1–3: a plain list, no
   repeats), glow in the current label colour, "N TRACKS" / "NO TRACKS" plaque on the current card.
   The current record always sits in the vertical middle between the toolbar and the filter bar,
   ends and a lone record included: content margins of half the free height, and a re-centre on
-  appear and when the free height changes (the filter bar arrives with the first record). A tap on
-  the current card expands it (`ExpandedRecordView`): sleeve up-left, disc out right, label · year,
-  genres, Hide tracks, tracklist (or a muted "No tracks yet", `collection.noTracks`), Open release. The expanded sleeve is a tap gesture, not a Button, so a swipe that
-  starts on it moves to the next record.
+  appear and when the free height changes (the filter bar arrives with the first record).
+- **Record sheet (SCRUM-42, built; canvas "Record sheet", Tech Spec v7 §3):** a tap on a grid tile
+  or on the stack's current card opens `RecordSheetView` as a sheet
+  (`.presentationDetents([.fraction(0.85), .large])`, zoom from the sleeve). × top right or a swipe
+  down closes it; the carousel doesn't move while it's up. Content: sleeve with the record sliding
+  out, title, artist, label · year, genres, TRACKS + count, track rows, "No tracks yet" when empty,
+  pinned Open release (dismisses, then `CollectionView` pushes the release via
+  `navigationDestination(item:)`). Add to crate arrives with E4. The in-place expand
+  (`ExpandedRecordView`) is gone.
 - **Empty collection (canvas "Collection · empty", 28.10, built):** `VynlEmptyState` with an
   illustration slot (`EmptySleeveArt`: empty die-cut sleeve outline, faint grooved record behind),
   "No records yet", one line of copy, full-width primary "Add release". The grid/stack toggle and
@@ -293,10 +294,13 @@ This is critical for Appium/XCUITest automation — without stable IDs, locators
 - **Planned ids from Collection draft v0 (Tech Spec v4):**
   - built (DR-7): `collection.grid`, `collection.stack`, `collection.record` (Selected = the
     stack's current card, value "N tracks"), `collection.gridModeButton` /
-    `collection.stackModeButton` (Selected = current mode), `collection.expandedRecord`,
-    `collection.trackList`, `collection.trackRow` (label "A2, Salt Line", value = moods),
-    `collection.hideTracksButton`, `collection.openReleaseButton`; planned
-    `collection.addToCrateButton` (E4)
+    `collection.stackModeButton` (Selected = current mode)
+  - record sheet (SCRUM-42): `recordSheet` (container, label "Artist, Title"),
+    `recordSheet.closeButton`, `recordSheet.title`, `recordSheet.artist`, `recordSheet.trackRow`
+    (label "A2, Salt Line", value = moods), `recordSheet.noTracks`, `recordSheet.openReleaseButton`;
+    planned `recordSheet.addToCrateButton` (E4). Removed: `collection.expandedRecord`,
+    `collection.trackList`, `collection.trackRow`, `collection.hideTracksButton`,
+    `collection.openReleaseButton`, `collection.noTracks`
   - filter: `filter.bar` (label = summary, value "14 records") replaces `filter.bpmChip` /
     `keyChip` / `moodChip` / `genreChip`, their clear buttons, `filter.resultCount` and
     `filterSheet.closeButton`; `filterSheet.resetButton` (instead of `filter.resetButton`),

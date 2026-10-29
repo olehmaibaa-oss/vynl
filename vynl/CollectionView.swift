@@ -24,6 +24,11 @@ struct CollectionView: View {
     @Query private var releases: [Release]
     @State private var showAddRelease = false
     @State private var showFilter = false
+    /// The record whose sheet is up (SCRUM-42), in either mode.
+    @State private var sheetRelease: Release?
+    /// Set by Open release; pushed once the sheet is gone.
+    @State private var releaseToOpen: Release?
+    @State private var pushedRelease: Release?
     @AppStorage(RecordSort.storageKey) private var sortRaw = RecordSort.default.rawValue
     @AppStorage(CollectionMode.storageKey) private var modeRaw = CollectionMode.grid.rawValue
     @Namespace private var zoom
@@ -40,10 +45,10 @@ struct CollectionView: View {
             if releases.isEmpty {
                 emptyState
             } else if mode == .grid {
-                CollectionGridView(releases: sort.sorted(releases), zoom: zoom)
+                CollectionGridView(releases: sort.sorted(releases), zoom: zoom) { sheetRelease = $0 }
             } else {
                 // A new order starts the stack again from its first record.
-                CollectionStackView(releases: sort.sorted(releases), zoom: zoom)
+                CollectionStackView(releases: sort.sorted(releases), zoom: zoom) { sheetRelease = $0 }
                     .id(sortRaw)
             }
         }
@@ -55,9 +60,25 @@ struct CollectionView: View {
         .sheet(isPresented: $showFilter) {
             FilterSheet(sort: sortBinding)
         }
-        .navigationDestination(for: Release.self) { release in
+        .sheet(item: $sheetRelease, onDismiss: {
+            // Open release: the sheet goes first, then the release screen is pushed.
+            if let release = releaseToOpen {
+                releaseToOpen = nil
+                pushedRelease = release
+            }
+        }) { release in
+            RecordSheetView(release: release) {
+                releaseToOpen = release
+                sheetRelease = nil
+            }
+            .navigationTransition(.zoom(sourceID: release.persistentModelID, in: zoom))
+            .presentationDetents([.fraction(0.85), .large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Palette.surface)
+            .presentationCornerRadius(34)
+        }
+        .navigationDestination(item: $pushedRelease) { release in
             ReleaseDetailView(release: release)
-                .navigationTransition(.zoom(sourceID: release.persistentModelID, in: zoom))
         }
         // DR-3: every action on the right. No visible title (Collection draft v0);
         // navigationTitle stays for VoiceOver and the back button.

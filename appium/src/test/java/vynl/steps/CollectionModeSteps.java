@@ -66,29 +66,29 @@ public class CollectionModeSteps {
         collection().tapStackRecord(artist);
     }
 
-    @When("I expand the current record")
-    public void iExpandTheCurrentRecord() {
-        collection().expandCurrent();
+    @When("I tap {string} in the grid")
+    public void iTapInTheGrid(String artist) {
+        collection().openSheet(artist);
     }
 
-    @When("I tap Hide tracks")
-    public void iTapHideTracks() {
-        collection().hideTracks();
+    @When("I open the current record's sheet")
+    public void iOpenTheCurrentRecordsSheet() {
+        collection().openCurrentSheet();
     }
 
-    @When("I tap the expanded sleeve")
-    public void iTapTheExpandedSleeve() {
-        collection().tapExpandedSleeve();
+    @When("I close the record sheet")
+    public void iCloseTheRecordSheet() {
+        collection().closeRecordSheet();
     }
 
-    @When("I swipe the expanded record {word}")
-    public void iSwipeTheExpandedRecord(String direction) {
-        collection().swipeExpanded(direction);
+    @When("I swipe the record sheet down")
+    public void iSwipeTheRecordSheetDown() {
+        collection().dismissRecordSheetBySwipe();
     }
 
-    @When("I tap Open release")
-    public void iTapOpenRelease() {
-        collection().openReleaseFromStack();
+    @When("I tap Open release in the sheet")
+    public void iTapOpenReleaseInTheSheet() {
+        collection().openReleaseFromSheet();
     }
 
     /**
@@ -112,7 +112,7 @@ public class CollectionModeSteps {
     @When("I delete every release from the stack")
     public void iDeleteEveryReleaseFromTheStack() {
         while (!collection().isEmptyStateQuick()) {
-            collection().expandCurrent().openReleaseFromStack();
+            collection().openCurrentSheet().openReleaseFromSheet();
             detail().tapDelete().confirmDelete();
         }
     }
@@ -149,14 +149,15 @@ public class CollectionModeSteps {
         assertEquals(record, collection().currentStackRecord());
     }
 
-    @Then("the current record is collapsed")
-    public void theCurrentRecordIsCollapsed() {
-        assertTrue(collection().isCollapsed(), "The current record is still expanded");
+    @Then("no record sheet is open")
+    public void noRecordSheetIsOpen() {
+        assertTrue(collection().isSheetClosed(), "A record sheet is still open");
     }
 
-    @Then("the expanded record is {string}")
-    public void theExpandedRecordIs(String record) {
-        assertEquals(record, collection().expandedRecord());
+    @Then("the record sheet is {string}")
+    public void theRecordSheetIs(String record) {
+        assertTrue(collection().isSheetOpen(), "No record sheet open");
+        assertEquals(record, collection().sheetRecord());
     }
 
     @Given("I add a release from the toolbar with artist {string} and title {string}")
@@ -170,7 +171,7 @@ public class CollectionModeSteps {
         assertTrue(Math.abs(offset) <= 8, "Current record is " + offset + "pt off the middle");
     }
 
-    @Then("the expanded record shows {string}")
+    @Then("the record sheet shows {string}")
     public void theExpandedRecordShows(String text) {
         assertEquals(text, collection().noTracksText());
     }
@@ -181,8 +182,8 @@ public class CollectionModeSteps {
         assertEquals(labels.stream().distinct().count(), (long) labels.size(), "Repeated records: " + labels);
     }
 
-    @Then("the expanded tracks read {string} and {string}")
-    public void theExpandedTracksRead(String first, String second) {
-        assertEquals(List.of(first, second), collection().expandedTracks());
+    @Then("the sheet's tracks read {string} and {string}")
+    public void theSheetsTracksRead(String first, String second) {
+        assertEquals(List.of(first, second), collection().sheetTracks());
     }
 }

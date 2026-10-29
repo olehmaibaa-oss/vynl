@@ -2,7 +2,7 @@
 //  TrackRowView.swift
 //  vynl
 //
-//  Design System TrackRow, as on the release screen and in the expanded stack:
+//  Design System TrackRow, as on the release screen and in the record sheet:
 //  position · title with its moods underneath · BPM · key chip. Positions and BPM
 //  in tabular figures so the columns line up; a missing BPM shows a dash.
 //  Accessibility: label "A1, Magneze" (identity), value = moods "Deep, Hypnotic".

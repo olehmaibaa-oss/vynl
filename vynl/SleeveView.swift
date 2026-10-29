@@ -9,7 +9,7 @@
 //    release's label colour (coverColor, or the placeholder's seed colour).
 //  - Optional plaques (title over artist, top left, hanging 8pt off the edge),
 //    used where the name sits on the sleeve (form slot, stack card).
-//  RecordDisc is the record itself, for the release screen and the expanded stack.
+//  RecordDisc is the record itself, for the release screen and the record sheet.
 //
 
 import SwiftUI

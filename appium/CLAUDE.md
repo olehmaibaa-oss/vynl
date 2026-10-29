@@ -179,14 +179,13 @@ These are set in the Swift code and are the contract between app and tests. Matc
 - `collection.record` — a record in either mode, label "Artist, Title"; in the stack the current
   one is Selected and its value is "N tracks" / "No tracks". The stack loops from 4 records, so the same label
   can exist twice: stack lookups take the Selected one
-- `collection.expandedRecord` — the expanded sleeve (tap collapses)
-- `collection.noTracks` — "No tracks yet" in an expanded record without tracks
+- `recordSheet` — the record sheet a record tap opens in either mode (label "Artist, Title");
+  `recordSheet.closeButton` (×), `recordSheet.trackRow` (label "A1, Title", value = moods),
+  `recordSheet.noTracks` ("No tracks yet"), `recordSheet.openReleaseButton`
 - `filter.bar` — above the tab bar, label "All records", value "14 records, Artist A–Z"; opens the
   filter sheet
 - `sort.option` — filter sheet, label = option name, Selected on the current one;
   `filterSheet.applyButton` applies (a swipe down discards)
-- `collection.hideTracksButton`, `collection.trackList`, `collection.trackRow` (label "A1, Title"),
-  `collection.openReleaseButton` — expanded stack card
 - `collection.addReleaseButton` — empty-state "Add release" CTA; while empty there is no
   `collection.gridModeButton` / `stackModeButton` and no `filter.bar`
 - `collection.toolbarAddButton` — toolbar "+"
@@ -267,8 +266,13 @@ so nothing here gets "fixed" in the wrong direction before its story lands:
   / `isReleaseVisible` / `isReleaseGone` match `collection.record` with label BEGINSWITH
   "Artist, " (the grid; `-uitesting` always starts there). Stack: `switchToStack`,
   `currentStackRecord` (the Selected record), `swipeStack(up|down)` (a short drag on
-  `collection.stack`, waits for the current record to change), `expandCurrent`, `hideTracks`,
-  `tapExpandedSleeve`, `swipeExpanded`, `expandedTracks`, `openReleaseFromStack`.
+  `collection.stack`, waits for the current record to change).
+  **SCRUM-42 record sheet:** `openRelease(artist)` = tap the grid tile → `recordSheet` →
+  `recordSheet.openReleaseButton` (every scenario that opens a release goes through it).
+  `openSheet(artist)` (grid), `openCurrentSheet()` (stack), `closeRecordSheet()` (×),
+  `dismissRecordSheetBySwipe()`, `sheetRecord`, `sheetTracks`, `noTracksText`,
+  `openReleaseFromSheet()`. The sheet zooms in; a tap during the animation is lost, so opening
+  waits until the × stops moving (`waitForSheetSettled`).
   "I relaunch the app keeping the mode" = `terminateApp` + `mobile: launchApp` with
   `-uitesting -uitesting-keepMode` (the store is in memory, so the app comes back empty).
   `collection_modes.feature` (@collection-modes).

@@ -19,6 +19,10 @@ import java.util.Map;
  * that label, never by StaticText. In the stack the current record carries the
  * Selected trait; looping (4+ records) puts the same record in more than one
  * slot, so stack lookups always take the selected one.
+ *
+ * <p>SCRUM-42: a tap on a record (the grid tile, or the stack's current card)
+ * opens the record sheet ({@code recordSheet.*}); the release screen opens from
+ * the sheet's Open release.
  */
 public class CollectionPage extends BasePage {
 
@@ -27,10 +31,11 @@ public class CollectionPage extends BasePage {
     private static final String RECORD = "collection.record";
     private static final String GRID_MODE_BUTTON = "collection.gridModeButton";
     private static final String STACK_MODE_BUTTON = "collection.stackModeButton";
-    private static final String EXPANDED_RECORD = "collection.expandedRecord";
-    private static final String HIDE_TRACKS_BUTTON = "collection.hideTracksButton";
-    private static final String TRACK_ROW = "collection.trackRow";
-    private static final String OPEN_RELEASE_BUTTON = "collection.openReleaseButton";
+    private static final String SHEET = "recordSheet";
+    private static final String SHEET_CLOSE = "recordSheet.closeButton";
+    private static final String SHEET_TRACK_ROW = "recordSheet.trackRow";
+    private static final String SHEET_NO_TRACKS = "recordSheet.noTracks";
+    private static final String SHEET_OPEN_RELEASE = "recordSheet.openReleaseButton";
     private static final String ADD_RELEASE_BUTTON = "collection.addReleaseButton";
     private static final String TOOLBAR_ADD_BUTTON = "collection.toolbarAddButton";
     private static final String MOODS_BUTTON = "collection.moodsButton";
@@ -136,10 +141,20 @@ public class CollectionPage extends BasePage {
         return isGone(record(artist), Config.absenceTimeout());
     }
 
-    /** Opens a release from the grid (the default mode on a test launch). */
+    /**
+     * Opens a release from the grid (the default mode on a test launch): the
+     * tile opens the record sheet, the sheet's Open release pushes the release.
+     */
     public ReleaseDetailPage openRelease(String artist) {
+        openSheet(artist);
+        return openReleaseFromSheet();
+    }
+
+    /** Taps a grid tile; its record sheet comes up. */
+    public CollectionPage openSheet(String artist) {
         waitFor(ExpectedConditions.elementToBeClickable(record(artist))).click();
-        return new ReleaseDetailPage(driver);
+        waitForSheetSettled();
+        return this;
     }
 
     /** Grid tiles as rows of "Artist, Title", top to bottom, left to right. */
@@ -196,51 +211,61 @@ public class CollectionPage extends BasePage {
         return this;
     }
 
-    public CollectionPage expandCurrent() {
+    /** Taps the stack's current record; its record sheet comes up. */
+    public CollectionPage openCurrentSheet() {
         waitFor(ExpectedConditions.elementToBeClickable(CURRENT_RECORD)).click();
-        findVisible(HIDE_TRACKS_BUTTON);
+        waitForSheetSettled();
         return this;
     }
 
-    public boolean isExpanded() {
-        return isVisible(byId(HIDE_TRACKS_BUTTON), Config.elementTimeout());
+    /**
+     * The sheet zooms in from the sleeve; a tap during that animation is lost
+     * (seen with Open release). Settled = the close button is present and stays
+     * put between two reads.
+     */
+    private void waitForSheetSettled() {
+        find(SHEET_CLOSE);
+        waitFor(d -> {
+            int y1 = find(SHEET_CLOSE).getRect().getY();
+            try { Thread.sleep(300); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            return y1 == find(SHEET_CLOSE).getRect().getY();
+        });
     }
 
-    public boolean isCollapsed() {
-        return isGone(byId(HIDE_TRACKS_BUTTON), Config.elementTimeout())
-                && isVisible(CURRENT_RECORD, Config.elementTimeout());
+    public boolean isSheetOpen() {
+        return isVisible(byId(SHEET), Config.elementTimeout());
     }
 
-    public String expandedRecord() {
-        return find(EXPANDED_RECORD).getAttribute("label");
+    public boolean isSheetClosed() {
+        return isGone(byId(SHEET), Config.elementTimeout());
     }
 
-    public CollectionPage hideTracks() {
-        tap(HIDE_TRACKS_BUTTON);
+    /** "Artist, Title" of the record whose sheet is up. */
+    public String sheetRecord() {
+        return find(SHEET).getAttribute("label");
+    }
+
+    public CollectionPage closeRecordSheet() {
+        tap(SHEET_CLOSE);
+        isGone(byId(SHEET), Config.elementTimeout());
         return this;
     }
 
-    public CollectionPage tapExpandedSleeve() {
-        tap(EXPANDED_RECORD);
-        return this;
-    }
-
-    /** Swipes the expanded view: collapses and moves one record ("up" = next). */
-    public CollectionPage swipeExpanded(String direction) {
-        org.openqa.selenium.Rectangle r = find(EXPANDED_RECORD).getRect();
-        int x = r.getX() + r.getWidth() / 2;
-        int y = r.getY() + r.getHeight() / 2;
-        boolean up = direction.equals("up");
+    /** Drags the sheet down from its top edge, past the bottom of the screen. */
+    public CollectionPage dismissRecordSheetBySwipe() {
+        org.openqa.selenium.Rectangle close = find(SHEET_CLOSE).getRect();
+        int screenHeight = driver.manage().window().getSize().getHeight();
+        int x = driver.manage().window().getSize().getWidth() / 2;
+        int y = close.getY() - 40;
         driver.executeScript("mobile: dragFromToForDuration", Map.of(
-                "duration", 0.15,
-                "fromX", x, "fromY", up ? y + 60 : y - 60,
-                "toX", x, "toY", up ? y - 80 : y + 80));
+                "duration", 0.2, "fromX", x, "fromY", y, "toX", x, "toY", screenHeight - 20));
+        isGone(byId(SHEET), Config.elementTimeout());
         return this;
     }
 
-    /** Labels of the expanded record's track rows ("A1, Title"). */
-    public List<String> expandedTracks() {
-        return labelsOf(TRACK_ROW);
+    /** Labels of the sheet's track rows ("A1, Title"). */
+    public List<String> sheetTracks() {
+        return labelsOf(SHEET_TRACK_ROW);
     }
 
     /**
@@ -264,13 +289,15 @@ public class CollectionPage extends BasePage {
         return labelsOf(RECORD);
     }
 
-    /** The expanded record's empty-tracklist line. */
+    /** The sheet's empty-tracklist line. */
     public String noTracksText() {
-        return findVisible("collection.noTracks").getAttribute("label");
+        return findVisible(SHEET_NO_TRACKS).getAttribute("label");
     }
 
-    public ReleaseDetailPage openReleaseFromStack() {
-        tap(OPEN_RELEASE_BUTTON);
+    /** Open release in the sheet: the sheet goes, the release screen is pushed. */
+    public ReleaseDetailPage openReleaseFromSheet() {
+        tap(SHEET_OPEN_RELEASE);
+        isGone(byId(SHEET), Config.elementTimeout());
         return new ReleaseDetailPage(driver);
     }
 
