@@ -147,6 +147,12 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   surround), drag to move, pinch to zoom (1–5×), always covering the square. Use →
   `CropGeometry.cropRect` (image pixels) → `CoverArt.prepare(image, square:)`. Cancel (Retake for
   the camera) changes nothing. Ids `coverCrop.view`, `coverCrop.useButton`, `coverCrop.cancelButton`.
+- **Record camera (COV-2, SCRUM-58):** `RecordCameraView` (AVFoundation, back wide camera, portrait,
+  flash auto/on/off) replaces the system picker behind Take photo. The preview is a square with
+  aspect-fill plus the dashed label circle, so it shows exactly the centred square the crop screen
+  starts from; the shot opens `CoverCropView` with Retake / Use photo. Permission flow from
+  SCRUM-40 stays. Ids `recordCamera.preview`, `.shutterButton`, `.flashButton`, `.closeButton`.
+  Manual on a device only (no camera on the simulator; Appium keeps `@no-camera`).
 - `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
 
