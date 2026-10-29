@@ -64,6 +64,23 @@ enum CoverArt {
         return Prepared(cover: cover, label: label, color: coverColor(of: labelImage).map(hex))
     }
 
+    /// Longest side of the image the crop screen works on: enough for the
+    /// 1200 px cover from a zoomed-in square, light enough to drag at 60 fps.
+    static let workingDimension: CGFloat = 2400
+
+    /// Decode, draw upright and scale down in one pass. Call off the main thread:
+    /// a full camera or library photo takes a moment.
+    nonisolated static func workingImage(from data: Data) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: workingDimension,
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: cg)
+    }
+
     static func centredSquare(in size: CGSize) -> CGRect {
         let side = min(size.width, size.height)
         return CGRect(x: (size.width - side) / 2, y: (size.height - side) / 2, width: side, height: side)

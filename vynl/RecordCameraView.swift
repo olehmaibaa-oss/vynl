@@ -50,7 +50,15 @@ final class RecordCamera: NSObject, ObservableObject, AVCapturePhotoCaptureDeleg
               session.canAddInput(input), session.canAddOutput(output) else { return }
         session.addInput(input)
         session.addOutput(output)
-        output.maxPhotoQualityPrioritization = .quality
+        // A cover needs ~1200 px; 48 MP shots took seconds to decode and made
+        // the crop screen crawl (PO, 29.10). The smallest size of at least
+        // ~3000 px on the long side is plenty.
+        let sizes = device.activeFormat.supportedMaxPhotoDimensions
+        if let size = sizes.filter({ max($0.width, $0.height) >= 3000 })
+            .min(by: { $0.width * $0.height < $1.width * $1.height }) ?? sizes.first {
+            output.maxPhotoDimensions = size
+        }
+        output.maxPhotoQualityPrioritization = .balanced
         let flash = device.hasFlash
         DispatchQueue.main.async { self.hasFlash = flash }
     }
@@ -60,6 +68,8 @@ final class RecordCamera: NSObject, ObservableObject, AVCapturePhotoCaptureDeleg
         let mode = flash
         queue.async { [self] in
             let settings = AVCapturePhotoSettings()
+            settings.maxPhotoDimensions = output.maxPhotoDimensions
+            settings.photoQualityPrioritization = .balanced
             if output.supportedFlashModes.contains(mode) { settings.flashMode = mode }
             // Portrait only: the sensor is landscape, so rotate the shot upright.
             if let connection = output.connection(with: .video), connection.isVideoRotationAngleSupported(90) {
@@ -71,9 +81,10 @@ final class RecordCamera: NSObject, ObservableObject, AVCapturePhotoCaptureDeleg
 
     nonisolated func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto,
                                  error: Error?) {
-        guard error == nil, let data = photo.fileDataRepresentation() else { return }
+        // Decoded, turned upright and scaled down here, off the main thread.
+        guard error == nil, let data = photo.fileDataRepresentation(),
+              let image = CoverArt.workingImage(from: data) else { return }
         Task { @MainActor in
-            guard let image = UIImage(data: data) else { return }
             self.onPhoto?(image)
             self.onPhoto = nil
         }

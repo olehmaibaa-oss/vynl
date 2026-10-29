@@ -158,6 +158,14 @@ struct CoverArtTests {
         #expect(offCentre.color == nil || rgb(offCentre.color!).0 < 180, "a square without the label must not give red")
     }
 
+    @Test func theWorkingImageIsCappedAndKeepsItsShape() throws {
+        let big = image(base: .darkGray, accent: .orange, share: 0.3, size: 4000)
+        let data = try #require(big.jpegData(compressionQuality: 0.8))
+        let working = try #require(CoverArt.workingImage(from: data))
+        #expect(max(working.size.width, working.size.height) * working.scale <= CoverArt.workingDimension)
+        #expect(working.size.width == working.size.height)
+    }
+
     @Test func hexRoundTrips() throws {
         #expect(CoverArt.hex((1, 0.5, 0)) == "#FF8000")
         #expect(CoverArt.color(hex: "#FF8000") != nil)

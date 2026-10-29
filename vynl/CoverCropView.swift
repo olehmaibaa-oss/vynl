@@ -61,9 +61,11 @@ struct CoverCropView: View {
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
 
-    private var upright: UIImage { CoverArt.normalized(image) }
+    // The caller hands over a working-size, upright image
+    // (CoverArt.workingImage); nothing is redrawn while dragging.
+    private var upright: UIImage { image }
     private var pixelSize: CGSize {
-        CGSize(width: upright.size.width * upright.scale, height: upright.size.height * upright.scale)
+        CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
     }
 
     var body: some View {
@@ -166,7 +168,9 @@ struct CropOverlay: View {
                     .position(x: rect.midX, y: rect.midY)
             }
         }
-        .ignoresSafeArea()
+        // Same geometry as the photo (no ignoresSafeArea here): the frame drawn
+        // is the square that gets cut. It used to ignore the safe area while the
+        // photo didn't, so the frame sat off the real crop (PO, 29.10).
         .accessibilityHidden(true)
     }
 }

@@ -81,7 +81,9 @@ struct CoverSlot: View {
             guard let item else { return }
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data) {
+                   let image = await Task.detached(priority: .userInitiated, operation: {
+                       CoverArt.workingImage(from: data)
+                   }).value {
                     cropping = CropSource(image: image, fromCamera: false)
                 }
                 // Lets the same photo be picked again after a Cancel.
