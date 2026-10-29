@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import AVFoundation
 import PhotosUI
 import UIKit
 
@@ -21,6 +22,7 @@ struct CoverSlot: View {
 
     @State private var pickerItem: PhotosPickerItem?
     @State private var showCamera = false
+    @State private var showCameraDenied = false
 
     /// `-uitesting-noCamera` lets a UI test see the app as on a device without a
     /// camera (the iOS 26 simulator reports one).
@@ -45,7 +47,7 @@ struct CoverSlot: View {
 
                 if hasCamera {
                     Button {
-                        showCamera = true
+                        openCamera()
                     } label: {
                         Label("Take photo", systemImage: "camera")
                     }
@@ -81,6 +83,33 @@ struct CoverSlot: View {
                 if let data = image.jpegData(compressionQuality: 0.9) { apply(data) }
             }
             .ignoresSafeArea()
+        }
+        .alert("Camera access is off", isPresented: $showCameraDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Choose photo instead", role: .cancel) {}
+        } message: {
+            Text("Allow camera access for VYNL in Settings to photograph a cover, or pick a photo from your library.")
+        }
+    }
+
+    /// SCRUM-40: asks for camera access first. Denied or restricted: an alert
+    /// pointing to Settings instead of a black camera screen.
+    private func openCamera() {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            showCamera = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                Task { @MainActor in
+                    if granted { showCamera = true } else { showCameraDenied = true }
+                }
+            }
+        default:
+            showCameraDenied = true
         }
     }
 
