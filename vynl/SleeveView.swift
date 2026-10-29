@@ -26,12 +26,16 @@ struct SleeveView: View {
     var body: some View {
         GeometryReader { geo in
             let side = min(geo.size.width, geo.size.height)
-            let hole = side * 0.153
+            // A real label (COV-1) is cut at CoverArt.labelRatio of the square, so
+            // the hole opens to exactly that circle and the label sits 1:1 with
+            // the photo around it. Otherwise the drawn label, a little larger
+            // than the hole (PO, 29.10: the hole was smaller than the photo's label).
+            let realLabel = cover != nil && labelImage != nil
+            let hole = realLabel ? side * CoverArt.labelRatio / 2 : side * 0.153
             ZStack(alignment: .topLeading) {
                 if dieCut {
-                    // The label under the cut, a little larger than the hole.
-                    LabelDisc(color: labelColor, side: hole * 2.35, showsText: false,
-                              image: cover == nil ? nil : labelImage)
+                    LabelDisc(color: labelColor, side: realLabel ? hole * 2 : hole * 2.35, showsText: false,
+                              image: realLabel ? labelImage : nil)
                         .frame(width: side, height: side)
                 }
                 art(side: side)
