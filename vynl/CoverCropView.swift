@@ -130,7 +130,7 @@ struct CoverCropView: View {
                         Spacer()
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.top, 8 + ScreenInsets.top(of: geo))
                     Spacer()
                     if !Self.cleanupOff { cleanupBar }
                     Text("Fit the record in the square, the label in the circle")
@@ -144,7 +144,7 @@ struct CoverCropView: View {
                     .disabled(working)
                     .accessibilityIdentifier("coverCrop.useButton")
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 12 + ScreenInsets.bottom(of: geo))
                 }
             }
             .onChange(of: placeToken) { place(geometry) }
@@ -253,6 +253,30 @@ struct CoverCropView: View {
                 lastZoom = zoom
                 lastOffset = offset
             }
+    }
+}
+
+/// The window's safe area not already applied to a full-screen cover. The
+/// crop and camera covers report no safe area of their own (Appium, 29.10:
+/// Cancel sat at y 8, under the status bar), so the controls pad by the
+/// window's insets, minus whatever SwiftUI did apply.
+enum ScreenInsets {
+    private static var window: UIWindow? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }
+    }
+
+    static func top(of geo: GeometryProxy) -> CGFloat {
+        guard let window else { return 0 }
+        return max(0, window.safeAreaInsets.top - geo.frame(in: .global).minY)
+    }
+
+    static func bottom(of geo: GeometryProxy) -> CGFloat {
+        guard let window else { return 0 }
+        let below = window.bounds.height - geo.frame(in: .global).maxY
+        return max(0, window.safeAreaInsets.bottom - below)
     }
 }
 

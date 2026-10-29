@@ -205,7 +205,8 @@ public class TrackFormPage extends BasePage {
 
     /** Whether the sheet is still up, after giving it the short budget to close. */
     public boolean isStillOpen() {
-        return !isGone(byId(POSITION_FIELD), Config.absenceTimeout());
+        // Not the position field: with the chips (TRK-1) it only exists after Other….
+        return !isGone(byId(TITLE_FIELD), Config.absenceTimeout());
     }
 
     public ReleaseDetailPage save() {

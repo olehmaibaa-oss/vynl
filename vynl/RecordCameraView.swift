@@ -131,6 +131,7 @@ struct RecordCameraView: View {
 
                 VStack(spacing: 16) {
                     topBar
+                        .padding(.top, ScreenInsets.top(of: geo))
                     Spacer(minLength: 0)
                     ZStack {
                         CameraPreview(session: camera.session)
@@ -154,7 +155,7 @@ struct RecordCameraView: View {
                         .accessibilityIdentifier("recordCamera.glareHint")
                     Spacer(minLength: 0)
                     shutter
-                        .padding(.bottom, 24)
+                        .padding(.bottom, 24 + ScreenInsets.bottom(of: geo))
                 }
             }
         }
