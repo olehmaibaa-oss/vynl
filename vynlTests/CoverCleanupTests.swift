@@ -72,6 +72,7 @@ struct CoverCleanupTests {
     @Test func findsAndStraightensASkewedSleeve() throws {
         let image = skewedSleeve()
         let quad = try #require(CoverCleanup.detectSleeve(image))
+        #expect(CoverCleanup.detectShape(image) == .sleeve(quad))
         let straight = try #require(CoverCleanup.straightened(image, quad: quad))
         let cg = try #require(straight.cgImage)
         #expect(cg.width == cg.height)
@@ -81,14 +82,40 @@ struct CoverCleanupTests {
         #expect(corner > 0.6)
     }
 
+    /// A bare record shot at an angle: an ellipse 900×600, label 300×200.
+    private func tiltedRecord() -> UIImage {
+        draw(CGSize(width: 1200, height: 1000)) { c in
+            UIColor(white: 0.75, alpha: 1).setFill()
+            c.fill(CGRect(x: 0, y: 0, width: 1200, height: 1000))
+            UIColor(white: 0.05, alpha: 1).setFill()
+            c.fillEllipse(in: CGRect(x: 150, y: 200, width: 900, height: 600))
+            UIColor(red: 0.95, green: 0.55, blue: 0.1, alpha: 1).setFill()
+            c.fillEllipse(in: CGRect(x: 450, y: 400, width: 300, height: 200))
+        }
+    }
+
+    @Test func aTiltedRecordIsFoundAndMadeRound() throws {
+        let image = tiltedRecord()
+        guard case .record(let e)? = CoverCleanup.detectShape(image) else {
+            Issue.record("no record found"); return
+        }
+        #expect(abs(e.a - 450) < 25)
+        #expect(abs(e.b - 300) < 25)
+        let round = try #require(CoverCleanup.straightened(image, record: e))
+        #expect(round.cgImage?.width == round.cgImage?.height)
+        // The label is a circle now, so the label finder takes it.
+        let label = try #require(CoverCleanup.detectLabel(round))
+        #expect(abs(label.radius - 150) < 20)
+    }
+
     @Test func aFlatPhotoFindsNothingAndIsLeftAlone() {
         let flat = draw(CGSize(width: 800, height: 600)) { c in
             UIColor(red: 0.3, green: 0.4, blue: 0.5, alpha: 1).setFill()
             c.fill(CGRect(x: 0, y: 0, width: 800, height: 600))
         }
-        #expect(CoverCleanup.detectSleeve(flat) == nil)
+        #expect(CoverCleanup.detectShape(flat) == nil)
         #expect(CoverCleanup.detectLabel(flat) == nil)
-        let out = CoverCleanup.process(flat, sleeve: nil, options: .init(straighten: true, enhance: false))
+        let out = CoverCleanup.process(flat, shape: nil, options: .init(straighten: true, enhance: false))
         #expect(out === flat)
     }
 
@@ -100,7 +127,7 @@ struct CoverCleanupTests {
     }
 
     @Test func runPlacesTheSquareOnTheLabel() throws {
-        let result = CoverCleanup.run(record(), sleeve: nil, options: .init(straighten: false, enhance: false))
+        let result = CoverCleanup.run(record(), shape: nil, options: .init(straighten: false, enhance: false))
         let square = try #require(result.labelSquare)
         #expect(abs(square.midX - 620) < 25)
         #expect(abs(square.midY - 580) < 25)

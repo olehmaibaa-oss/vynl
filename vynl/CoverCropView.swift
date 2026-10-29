@@ -73,7 +73,7 @@ struct CoverCropView: View {
     private static var cleanupOff: Bool { CommandLine.arguments.contains("-uitesting-noCleanup") }
 
     @State private var image: UIImage?
-    @State private var sleeve: CoverCleanup.Quad?
+    @State private var shape: CoverCleanup.Shape?
     @State private var labelSquare: CGRect?
     @State private var options = CoverCleanup.Options()
     @State private var analysed = false
@@ -158,7 +158,7 @@ struct CoverCropView: View {
     private var cleanupBar: some View {
         HStack(spacing: 8) {
             chip("Straighten", on: options.straighten, id: "coverCrop.straightenToggle",
-                 enabled: sleeve != nil) { options.straighten.toggle() }
+                 enabled: shape != nil) { options.straighten.toggle() }
             chip("Enhance", on: options.enhance, id: "coverCrop.enhanceToggle") { options.enhance.toggle() }
             chip("No background", on: options.removeBackground, id: "coverCrop.backgroundToggle") {
                 options.removeBackground.toggle()
@@ -199,22 +199,22 @@ struct CoverCropView: View {
         .accessibilityValue(on && enabled ? "on" : "off")
     }
 
-    /// First pass: find the sleeve on the original, then clean up and place
+    /// First pass: find the sleeve or the record on the original, then clean up and place
     /// the photo on its label.
     private func analyse() async {
         guard !Self.cleanupOff, !analysed else { return }
         working = true
         let source = original
-        sleeve = await Task.detached(priority: .userInitiated) { CoverCleanup.detectSleeve(source) }.value
+        shape = await Task.detached(priority: .userInitiated) { CoverCleanup.detectShape(source) }.value
         analysed = true
         await reprocess(replace: true)
     }
 
     private func reprocess(replace: Bool) async {
         working = true
-        let source = original, quad = sleeve, opts = options
+        let source = original, found = shape, opts = options
         let result = await Task.detached(priority: .userInitiated) {
-            CoverCleanup.run(source, sleeve: quad, options: opts)
+            CoverCleanup.run(source, shape: found, options: opts)
         }.value
         // A newer toggle won the race: its own pass will land.
         guard opts == options else { return }
