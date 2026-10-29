@@ -28,21 +28,66 @@ struct CoverArtTests {
         return ((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF)
     }
 
-    @Test func picksTheContrastingAccent() throws {
-        // Dark teal cover with a cream band (20%): cream contrasts with the average.
+    /// A record photo as SCRUM-41 found it: grey table, big black disc, a small
+    /// red label in the middle (~3% of the frame).
+    private func recordPhoto(label: UIColor, background: UIColor = UIColor(white: 0.55, alpha: 1),
+                             size: CGFloat = 600) -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format).image { ctx in
+            background.setFill(); ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
+            UIColor(white: 0.04, alpha: 1).setFill()
+            ctx.cgContext.fillEllipse(in: CGRect(x: size * 0.08, y: size * 0.08, width: size * 0.84, height: size * 0.84))
+            label.setFill()
+            let r = size * 0.1
+            ctx.cgContext.fillEllipse(in: CGRect(x: size / 2 - r, y: size / 2 - r, width: 2 * r, height: 2 * r))
+        }
+    }
+
+    @Test func aRecordPhotoTakesTheLabelNotTheBlackDisc() throws {
+        let img = recordPhoto(label: UIColor(red: 0.85, green: 0.27, blue: 0.18, alpha: 1))
+        let hex = CoverArt.hex(try #require(CoverArt.coverColor(of: img)))
+        let (r, g, b) = rgb(hex)
+        #expect(r > 180 && g < 110 && b < 100, "expected the red label, got \(hex)")
+    }
+
+    @Test func aRecordPhotoOnAWhiteTableStillTakesTheLabel() throws {
+        let img = recordPhoto(label: UIColor(red: 0.09, green: 0.73, blue: 0.74, alpha: 1), background: .white)
+        let hex = CoverArt.hex(try #require(CoverArt.coverColor(of: img)))
+        let (r, g, b) = rgb(hex)
+        #expect(r < 90 && g > 140 && b > 140, "expected the teal label, got \(hex)")
+    }
+
+    @Test func neverBlackOrWhite() throws {
+        // Black-and-white sleeve: no colour at all → nil (the label falls back to a key colour).
+        let img = image(base: UIColor(white: 0.05, alpha: 1), accent: .white, share: 0.4)
+        #expect(CoverArt.coverColor(of: img) == nil)
+    }
+
+    @Test func aMutedSleeveFallsBackToTheContrastRule() throws {
+        // Dark grey sleeve with a mid-grey band: nothing vivid, the band contrasts.
+        let img = image(base: UIColor(white: 0.18, alpha: 1), accent: UIColor(white: 0.6, alpha: 1), share: 0.3)
+        let hex = CoverArt.hex(try #require(CoverArt.coverColor(of: img)))
+        let (r, _, _) = rgb(hex)
+        #expect(r > 130, "expected the light-grey band, got \(hex)")
+    }
+
+    @Test func aStrongColourBeatsABiggerDullOne() throws {
+        // Dark teal sleeve (vivid, 80%) with a cream band (dull, 20%): teal, the colour of the sleeve.
         let img = image(base: UIColor(red: 0.11, green: 0.31, blue: 0.35, alpha: 1),
                         accent: UIColor(red: 0.93, green: 0.89, blue: 0.81, alpha: 1), share: 0.2)
         let hex = CoverArt.hex(try #require(CoverArt.coverColor(of: img)))
         let (r, g, b) = rgb(hex)
-        #expect(r > 200 && g > 190 && b > 170, "expected cream, got \(hex)")
+        #expect(r < 60 && g > 60 && b > 70, "expected teal, got \(hex)")
     }
 
-    @Test func ignoresColoursUnderFivePercent() throws {
-        // A bright red sliver at 2% would contrast most, but it's too small to count.
-        let img = image(base: UIColor(white: 0.1, alpha: 1), accent: .red, share: 0.02)
-        let hex = CoverArt.hex(try #require(CoverArt.coverColor(of: img)))
-        let (r, g, _) = rgb(hex)
-        #expect(!(r > 200 && g < 60), "the 2% red won: \(hex)")
+    @Test func ignoresSpecks() throws {
+        // A 0.5% red sliver on a dark sleeve is noise, not the label.
+        let img = image(base: UIColor(white: 0.1, alpha: 1), accent: .red, share: 0.005)
+        if let c = CoverArt.coverColor(of: img) {
+            let (r, g, _) = rgb(CoverArt.hex(c))
+            #expect(!(r > 200 && g < 60), "the speck won")
+        }
     }
 
     @Test func aBigPhotoIsDownscaledOnSave() throws {
