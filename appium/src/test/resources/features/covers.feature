@@ -25,6 +25,18 @@ Feature: Covers
     When I fill the release, pick the newest photo and cancel the crop
     Then the cover slot still shows the placeholder
 
+  # COV-4 (SCRUM-61): the photo is cleaned up on the crop screen, each step a chip.
+  Scenario: Cleanup chips on the crop screen
+    Given a photo is in the library
+    And I am on the add-release form
+    When I fill the release and open the newest photo
+    Then the crop chip "enhance" is "on"
+    And the crop chip "background" is "off"
+    When I tap the crop chip "enhance"
+    Then the crop chip "enhance" is "off"
+    When I use the crop
+    Then the cover slot shows a cover image
+
   Scenario: Remove a cover
     Given a photo is in the library
     And a release with a cover exists

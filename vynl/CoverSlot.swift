@@ -100,15 +100,15 @@ struct CoverSlot: View {
             RecordCameraView { image in shot = image }
         }
         .fullScreenCover(item: $cropping) { source in
-            CoverCropView(image: source.image,
+            CoverCropView(original: source.image,
                           cancelTitle: source.fromCamera ? "Retake" : "Cancel",
                           useTitle: source.fromCamera ? "Use photo" : "Use",
                           onCancel: {
                               cropping = nil
                               if source.fromCamera { showCamera = true }
                           },
-                          onUse: { square in
-                              apply(source.image, square: square)
+                          onUse: { image, square in
+                              apply(image, square: square)
                               cropping = nil
                           })
         }

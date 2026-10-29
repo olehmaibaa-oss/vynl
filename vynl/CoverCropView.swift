@@ -6,7 +6,8 @@
 //  in the centre circle. Pinch to zoom, drag to move; the photo always covers
 //  the square. "Use" returns the square in the image's pixels, which
 //  CoverArt.prepare turns into the cover and the label. The camera (COV-2)
-//  shows its shot here too, with Retake instead of Cancel.
+//  shows its shot here too, with Retake instead of Cancel. COV-4 (SCRUM-61)
+//  cleans the photo up first (CoverCleanup) and places it on its label.
 //
 
 import SwiftUI
@@ -47,35 +48,57 @@ struct CropGeometry {
         let y = (imageSize.height * s / 2 - frameSide / 2 - o.height) / s
         return CGRect(x: x, y: y, width: side, height: side)
     }
+
+    /// COV-4: the zoom and offset that put `square` (image pixels) under the
+    /// frame, the inverse of cropRect. Clamped like a gesture would be.
+    func placement(for square: CGRect) -> (zoom: CGFloat, offset: CGSize) {
+        let zoom = min(max(min(imageSize.width, imageSize.height) / max(square.width, 1), 1), Self.maxZoom)
+        let s = baseScale * zoom
+        let raw = CGSize(width: imageSize.width * s / 2 - frameSide / 2 - square.minX * s,
+                         height: imageSize.height * s / 2 - frameSide / 2 - square.minY * s)
+        return (zoom, clamped(raw, zoom: zoom))
+    }
 }
 
 struct CoverCropView: View {
-    let image: UIImage
+    /// The working-size, upright photo (CoverArt.workingImage).
+    let original: UIImage
     var cancelTitle = "Cancel"
     var useTitle = "Use"
     let onCancel: () -> Void
-    let onUse: (CGRect) -> Void
+    /// The photo as cleaned up (COV-4) and the square cut from it.
+    let onUse: (UIImage, CGRect) -> Void
+
+    /// `-uitesting-noCleanup` keeps the photo as picked (deterministic UI tests).
+    private static var cleanupOff: Bool { CommandLine.arguments.contains("-uitesting-noCleanup") }
+
+    @State private var image: UIImage?
+    @State private var sleeve: CoverCleanup.Quad?
+    @State private var labelSquare: CGRect?
+    @State private var options = CoverCleanup.Options()
+    @State private var analysed = false
+    @State private var working = false
+    /// Bumped whenever the photo should be re-placed on its label.
+    @State private var placeToken = 0
 
     @State private var zoom: CGFloat = 1
     @State private var lastZoom: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
 
-    // The caller hands over a working-size, upright image
-    // (CoverArt.workingImage); nothing is redrawn while dragging.
-    private var upright: UIImage { image }
+    private var shown: UIImage { image ?? original }
     private var pixelSize: CGSize {
-        CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+        CGSize(width: shown.size.width * shown.scale, height: shown.size.height * shown.scale)
     }
 
     var body: some View {
         GeometryReader { geo in
-            let side = min(geo.size.width - 32, geo.size.height - 220)
+            let side = min(geo.size.width - 32, geo.size.height - 270)
             let geometry = CropGeometry(imageSize: pixelSize, frameSide: side)
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                Image(uiImage: upright)
+                Image(uiImage: shown)
                     .resizable()
                     .frame(width: pixelSize.width * geometry.baseScale * zoom,
                            height: pixelSize.height * geometry.baseScale * zoom)
@@ -92,6 +115,12 @@ struct CoverCropView: View {
                 CropOverlay(side: side)
                     .allowsHitTesting(false)
 
+                if working {
+                    ProgressView()
+                        .tint(Palette.ink)
+                        .accessibilityIdentifier("coverCrop.working")
+                }
+
                 VStack {
                     HStack {
                         Button(cancelTitle, action: onCancel)
@@ -103,22 +132,107 @@ struct CoverCropView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     Spacer()
+                    if !Self.cleanupOff { cleanupBar }
                     Text("Fit the record in the square, the label in the circle")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Palette.inkMuted)
                         .padding(.bottom, 12)
                     Button(useTitle) {
-                        onUse(geometry.cropRect(zoom: zoom, offset: offset))
+                        onUse(shown, geometry.cropRect(zoom: zoom, offset: offset))
                     }
                     .buttonStyle(.vynlPrimary)
+                    .disabled(working)
                     .accessibilityIdentifier("coverCrop.useButton")
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
                 }
             }
+            .onChange(of: placeToken) { place(geometry) }
         }
         .preferredColorScheme(.dark)
+        .task { await analyse() }
     }
+
+    // MARK: - COV-4 cleanup
+
+    private var cleanupBar: some View {
+        HStack(spacing: 8) {
+            chip("Straighten", on: options.straighten, id: "coverCrop.straightenToggle",
+                 enabled: sleeve != nil) { options.straighten.toggle() }
+            chip("Enhance", on: options.enhance, id: "coverCrop.enhanceToggle") { options.enhance.toggle() }
+            chip("No background", on: options.removeBackground, id: "coverCrop.backgroundToggle") {
+                options.removeBackground.toggle()
+            }
+            Button {
+                placeToken += 1
+            } label: {
+                Image(systemName: "scope")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(width: 36, height: 32)
+                    .background(Capsule().stroke(Palette.ink.opacity(0.5), lineWidth: 1))
+            }
+            .foregroundStyle(Palette.ink)
+            .disabled(labelSquare == nil || working)
+            .opacity(labelSquare == nil ? 0.35 : 1)
+            .accessibilityLabel("Fit label")
+            .accessibilityIdentifier("coverCrop.fitLabelButton")
+        }
+        .padding(.bottom, 12)
+        .disabled(!analysed)
+        .onChange(of: options) { Task { await reprocess(replace: false) } }
+    }
+
+    private func chip(_ title: String, on: Bool, id: String, enabled: Bool = true,
+                      action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .padding(.horizontal, 12)
+                .frame(height: 32)
+                .background(Capsule().fill(on && enabled ? Palette.ink : Color.clear))
+                .overlay(Capsule().stroke(Palette.ink.opacity(0.5), lineWidth: 1))
+                .foregroundStyle(on && enabled ? Color.black : Palette.ink)
+        }
+        .disabled(!enabled || working)
+        .opacity(enabled ? 1 : 0.35)
+        .accessibilityIdentifier(id)
+        .accessibilityValue(on && enabled ? "on" : "off")
+    }
+
+    /// First pass: find the sleeve on the original, then clean up and place
+    /// the photo on its label.
+    private func analyse() async {
+        guard !Self.cleanupOff, !analysed else { return }
+        working = true
+        let source = original
+        sleeve = await Task.detached(priority: .userInitiated) { CoverCleanup.detectSleeve(source) }.value
+        analysed = true
+        await reprocess(replace: true)
+    }
+
+    private func reprocess(replace: Bool) async {
+        working = true
+        let source = original, quad = sleeve, opts = options
+        let result = await Task.detached(priority: .userInitiated) {
+            CoverCleanup.run(source, sleeve: quad, options: opts)
+        }.value
+        // A newer toggle won the race: its own pass will land.
+        guard opts == options else { return }
+        let sizeChanged = result.image.size != shown.size
+        image = result.image
+        labelSquare = result.labelSquare
+        working = false
+        if sizeChanged || replace { placeToken += 1 }
+    }
+
+    /// The label in the circle when one was found, otherwise centred at zoom 1.
+    private func place(_ g: CropGeometry) {
+        let p = labelSquare.map { g.placement(for: $0) } ?? (1, .zero)
+        zoom = p.zoom; lastZoom = p.zoom
+        offset = p.offset; lastOffset = p.offset
+    }
+
+    // MARK: - Gestures
 
     private func dragGesture(_ g: CropGeometry) -> some Gesture {
         DragGesture()

@@ -43,4 +43,22 @@ struct CropGeometryTests {
         let portrait = CropGeometry(imageSize: CGSize(width: 3000, height: 4000), frameSide: 300)
         #expect(portrait.cropRect(zoom: 1, offset: .zero) == CGRect(x: 0, y: 500, width: 3000, height: 3000))
     }
+
+    // COV-4: placing the photo on a detected label is cropRect run backwards.
+    @Test func placementPutsTheSquareUnderTheFrame() {
+        let square = CGRect(x: 1800, y: 900, width: 1200, height: 1200)
+        let p = g.placement(for: square)
+        let r = g.cropRect(zoom: p.zoom, offset: p.offset)
+        #expect(abs(r.minX - square.minX) < 0.5)
+        #expect(abs(r.minY - square.minY) < 0.5)
+        #expect(abs(r.width - square.width) < 0.5)
+    }
+
+    @Test func placementStaysInsideThePhoto() {
+        // A square hanging off the right edge is pulled back in.
+        let p = g.placement(for: CGRect(x: 3500, y: 0, width: 1000, height: 1000))
+        let r = g.cropRect(zoom: p.zoom, offset: p.offset)
+        #expect(r.maxX <= 4000.5)
+        #expect(abs(r.width - 1000) < 0.5)
+    }
 }

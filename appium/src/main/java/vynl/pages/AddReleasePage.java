@@ -122,6 +122,7 @@ public class AddReleasePage extends BasePage {
      */
     public AddReleasePage pickNewestLibraryPhoto() {
         openNewestLibraryPhoto();
+        waitCropReady();
         tap(CROP_USE);
         new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
                 .until(d -> coverKind().startsWith("image"));
@@ -140,6 +141,34 @@ public class AddReleasePage extends BasePage {
                 "x", cell.getX() + cell.getWidth() / 2,
                 "y", cell.getY() + cell.getHeight() / 2));
         findVisible(CROP_USE);
+        return this;
+    }
+
+    /**
+     * COV-4: the crop screen cleans the photo up first and keeps Use disabled
+     * until it's done.
+     */
+    public AddReleasePage waitCropReady() {
+        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20))
+                .until(d -> isButtonEnabled(CROP_USE));
+        return this;
+    }
+
+    /** "on" / "off" of a cleanup chip: straighten, enhance, background. */
+    public String cropToggle(String name) {
+        return findVisible("coverCrop." + name + "Toggle").getAttribute("value");
+    }
+
+    public AddReleasePage tapCropToggle(String name) {
+        tap("coverCrop." + name + "Toggle");
+        waitCropReady();
+        return this;
+    }
+
+    public AddReleasePage useCrop() {
+        tap(CROP_USE);
+        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
+                .until(d -> coverKind().startsWith("image"));
         return this;
     }
 

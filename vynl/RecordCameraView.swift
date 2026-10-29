@@ -147,6 +147,11 @@ struct RecordCameraView: View {
                     Text("Fit the record in the square, the label in the circle")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Palette.inkMuted)
+                    // COV-4: glare can't be fixed afterwards, only avoided.
+                    Text("Tilt the record a little if the light glares")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.inkMuted.opacity(0.8))
+                        .accessibilityIdentifier("recordCamera.glareHint")
                     Spacer(minLength: 0)
                     shutter
                         .padding(.bottom, 24)

@@ -69,6 +69,31 @@ public class CoverSteps {
         form.cancelCrop();
     }
 
+    @When("I fill the release and open the newest photo")
+    public void iFillTheReleaseAndOpenThePhoto() {
+        form().fillRequired(Flows.ARTIST, Flows.TITLE, Flows.GENRE).openNewestLibraryPhoto().waitCropReady();
+    }
+
+    @Then("the crop chip {string} is {string}")
+    public void theCropChipIs(String chip, String value) {
+        assertEquals(value, form().cropToggle(chip));
+    }
+
+    @When("I tap the crop chip {string}")
+    public void iTapTheCropChip(String chip) {
+        form().tapCropToggle(chip);
+    }
+
+    @When("I use the crop")
+    public void iUseTheCrop() {
+        form().useCrop();
+    }
+
+    @Then("the cover slot shows a cover image")
+    public void theSlotShowsACoverImage() {
+        assertEquals("image+label", form().coverKind());
+    }
+
     @Then("the cover slot still shows the placeholder")
     public void theSlotStillShowsThePlaceholder() {
         assertEquals("placeholder", form().coverKind());
