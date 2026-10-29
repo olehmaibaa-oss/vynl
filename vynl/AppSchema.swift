@@ -2,30 +2,73 @@
 //  AppSchema.swift
 //  vynl
 //
+//  TECH-1 (SCRUM-43): the schema is versioned and opened through a migration
+//  plan, because the app now holds real collections (Tech Spec §4). Rules for
+//  every model change from here on:
+//
+//  1. Freeze the current models: copy them into `SchemaV<n>` as nested types
+//     (a VersionedSchema must keep describing the old shape forever).
+//  2. Add `SchemaV<n+1>` with the live models, append it to
+//     `VynlMigrationPlan.schemas`, and add a stage (`.lightweight` for added
+//     optional fields / new entities, `.custom` when data has to move).
+//  3. Point `AppSchema.current` at the new version.
+//  4. Add a migration test that writes a store with the old schema and opens
+//     it with the plan (see MigrationTests).
+//
+//  Stores from before v2 (simulator-era builds) are still reset by StoreReset;
+//  a v2+ store is never reset again.
+//
 
 import Foundation
 import SwiftData
 
+/// Schema v2: DR-2 (Genre, cover, coverColor, dateAdded, Camelot key, mood
+/// groups). The first schema that holds real data. Still the live models: when
+/// v3 arrives, these become frozen nested copies (rule 1 above).
+enum SchemaV2: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(2, 0, 0) }
+
+    static var models: [any PersistentModel.Type] {
+        [Release.self, Track.self, MoodTag.self, Genre.self]
+    }
+}
+
+/// Every schema the app has shipped with real data, oldest first, and how to
+/// get from one to the next.
+enum VynlMigrationPlan: SchemaMigrationPlan {
+    static var schemas: [any VersionedSchema.Type] { [SchemaV2.self] }
+
+    /// Empty until v3. Template for the first one (E4 adds Crate/CrateItem,
+    /// new entities only, so lightweight):
+    ///
+    ///     static let v2toV3 = MigrationStage.lightweight(fromVersion: SchemaV2.self,
+    ///                                                    toVersion: SchemaV3.self)
+    static var stages: [MigrationStage] { [] }
+}
+
 /// Every persisted model, in one place, so the app and the unit tests can't
 /// drift onto different schemas.
 enum AppSchema {
-    /// Bump on every model change; a different version on disk resets the store
-    /// (StoreReset) until migrations replace that.
-    /// v1: E1 + E2-S1. v2: DR-2 (Genre, cover, coverColor, dateAdded, Camelot key, mood groups).
+    /// The live versioned schema.
+    typealias Current = SchemaV2
+
+    /// The last schema version that resets instead of migrating (StoreReset).
+    /// Frozen at 2: newer versions go through `VynlMigrationPlan`.
     static let version = 2
 
-    static let models: [any PersistentModel.Type] = [
-        Release.self,
-        Track.self,
-        MoodTag.self,
-        Genre.self,
-    ]
+    static var models: [any PersistentModel.Type] { Current.models }
 
-    static var schema: Schema { Schema(models) }
+    static var schema: Schema { Schema(versionedSchema: Current.self) }
 
     /// Where the on-device store lives (SwiftData's default location, made explicit
     /// so StoreReset and the container agree on it).
     static var storeURL: URL {
         URL.applicationSupportDirectory.appending(path: "default.store")
+    }
+
+    /// The on-disk container, opened through the migration plan.
+    static func container(url: URL) throws -> ModelContainer {
+        try ModelContainer(for: schema, migrationPlan: VynlMigrationPlan.self,
+                           configurations: [ModelConfiguration(schema: schema, url: url)])
     }
 }

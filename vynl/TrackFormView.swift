@@ -138,6 +138,7 @@ struct TrackFormView: View {
             track.moods = chosenMoods
         }
 
+        modelContext.persist()
         dismiss()
     }
 

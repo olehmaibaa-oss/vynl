@@ -143,6 +143,7 @@ struct AddReleaseView: View {
             release.status = status
         }
 
+        modelContext.persist()
         dismiss()
     }
 }

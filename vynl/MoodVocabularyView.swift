@@ -80,6 +80,7 @@ struct MoodVocabularyView: View {
         for index in offsets {
             modelContext.delete(moods[index])
         }
+        modelContext.persist()
     }
 }
 

@@ -118,6 +118,7 @@ struct ReleaseDetailView: View {
         .alert("Delete release?", isPresented: $showDeleteConfirmation) {
             Button("Delete", role: .destructive) {
                 modelContext.delete(release)
+                modelContext.persist()
                 dismiss()
             }
             .accessibilityIdentifier("releaseDetail.confirmDeleteButton")
@@ -214,6 +215,7 @@ struct ReleaseDetailView: View {
         for index in offsets {
             modelContext.delete(sortedTracks[index])
         }
+        modelContext.persist()
     }
 }
 
