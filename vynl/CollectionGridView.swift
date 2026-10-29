@@ -45,7 +45,7 @@ struct CollectionGridView: View {
     private func tile(_ release: Release) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             SleeveView(artist: release.artist, title: release.title,
-                       cover: release.cover, coverColor: release.coverColor)
+                       cover: release.cover, coverColor: release.coverColor, labelImage: release.labelImage)
                 .matchedTransitionSource(id: release.persistentModelID, in: zoom)
             VStack(alignment: .leading, spacing: 1) {
                 Text(release.title)

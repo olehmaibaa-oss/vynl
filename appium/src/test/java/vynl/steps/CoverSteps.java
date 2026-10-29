@@ -15,6 +15,7 @@ import java.net.URISyntaxException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** DR-5 (SCRUM-34): covers in the release form and on the release screen. */
 public class CoverSteps {
@@ -68,7 +69,7 @@ public class CoverSteps {
                 .pickNewestLibraryPhoto()
                 .save()
                 .openRelease(Flows.ARTIST);
-        assertEquals("image", detail().coverKind(), "setup: the cover didn't stick");
+        assertTrue(detail().coverKind().startsWith("image"), "setup: the cover didn't stick");
     }
 
     @When("I edit it, remove the cover and save")
@@ -84,7 +85,7 @@ public class CoverSteps {
 
     @Then("the release shows a cover image")
     public void theReleaseShowsACoverImage() {
-        assertEquals("image", detail().coverKind());
+        assertEquals("image+label", detail().coverKind(), "a picked photo gives the cover and the real label");
     }
 
     @Then("the release shows the placeholder")

@@ -135,6 +135,13 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   colour → the old "contrasts most with the average, ≥ 5%" rule without black/white; nothing
   usable → nil (the label falls back to the placeholder key colour). Computed when a cover is
   saved, cleared when it is removed; placeholders derive theirs from their seed and store nothing.
+- `labelImage: Data?` (COV-1, SCRUM-57, schema v3) — the record's real label: the centre circle
+  (`CoverArt.labelRatio` = 0.33 of the cover square) cut from the photo, a square JPEG ≤ 400 px,
+  external storage. `LabelDisc` draws it clipped round with our spindle hole, rim shade and sheen
+  on top (no printed text over it), in the die-cut and on `RecordDisc`. `CoverArt.prepare` keeps
+  the largest centred square as the cover (crop screens in COV-2/3 will place it), cuts the label
+  from its centre and computes `coverColor` from the label. Cleared with the cover. Sleeve value
+  "image+label" when present.
 - `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
 
@@ -207,7 +214,8 @@ the store any more**.
   (2) add `SchemaV<n+1>` with the live models + a stage (`.lightweight` for new optional fields /
   entities, `.custom` when data moves), (3) point `AppSchema.Current` at it, (4) add a
   `MigrationTests` case that writes a store with the old version and opens it with the plan.
-  E4 (Crate, CrateItem) is the first: a lightweight v2 → v3 (template in `VynlMigrationPlan`).
+  First stage: v2 → v3 lightweight (COV-1 `labelImage`); v2 frozen in `SchemaV2.swift`.
+  E4 (Crate, CrateItem) will be v3 → v4.
 - `StoreReset` only resets **pre-v2** stores (simulator-era builds). `AppSchema.version` is frozen
   at 2; never bump it again.
 - **Saves are explicit:** every form Save and every delete calls `modelContext.persist()`

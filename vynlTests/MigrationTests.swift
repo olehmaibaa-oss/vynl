@@ -25,29 +25,29 @@ struct MigrationTests {
         storeURL = dir.appending(path: "default.store")
     }
 
-    /// A store as the pre-TECH-1 build wrote it: unversioned Schema of the models.
-    private func writeUnversionedV2Store() throws {
-        let schema = Schema([Release.self, Track.self, MoodTag.self, Genre.self])
+    /// A v2 store as the phone has it: the frozen v2 models, written either
+    /// unversioned (pre-TECH-1 builds) or as SchemaV2 (TECH-1 builds).
+    private func writeV2Store(versioned: Bool) throws {
+        let schema = versioned ? Schema(versionedSchema: SchemaV2.self) : Schema(SchemaV2.models)
         let container = try ModelContainer(for: schema,
                                            configurations: [ModelConfiguration(schema: schema, url: storeURL)])
         let context = ModelContext(container)
-        let genre = Genre(name: "Dub Techno")
-        let release = Release(artist: "Sable Drift", title: "Undertow", genres: [genre], label: "Low Hum", year: 2019)
+        let genre = SchemaV2.Genre(name: "Dub Techno")
+        let release = SchemaV2.Release(artist: "Sable Drift", title: "Undertow", genres: [genre],
+                                       label: "Low Hum", year: 2019)
         release.cover = Data([0xFF, 0xD8, 0xFF])
         release.coverColor = "#E28B63"
         context.insert(release)
-        let mood = MoodTag(name: "Hypnotic", group: .darkAndDriving)
+        let mood = SchemaV2.MoodTag(name: "Hypnotic", groupName: MoodGroup.darkAndDriving.rawValue)
         context.insert(mood)
-        let track = Track(position: "A2", title: "Salt Line", bpm: 128, key: .k9A)
+        let track = SchemaV2.Track(position: "A2", title: "Salt Line", bpm: 128, keyCode: "9A")
         track.release = release
         track.moods = [mood]
         context.insert(track)
         try context.save()
     }
 
-    @Test func anExistingV2StoreOpensThroughThePlanWithItsData() throws {
-        try writeUnversionedV2Store()
-
+    private func expectMigratedData() throws {
         let container = try AppSchema.container(url: storeURL)
         let context = ModelContext(container)
 
@@ -60,17 +60,34 @@ struct MigrationTests {
         #expect(release.genreNames == ["Dub Techno"])
         #expect(release.cover == Data([0xFF, 0xD8, 0xFF]))
         #expect(release.coverColor == "#E28B63")
+        #expect(release.labelImage == nil)
 
         let track = try #require(release.tracks.first)
         #expect(track.position == "A2")
         #expect(track.bpm == 128)
         #expect(track.key == .k9A)
         #expect(track.moods.map(\.name) == ["Hypnotic"])
+
+        // The new attribute works after the migration.
+        release.labelImage = Data([1, 2, 3])
+        try context.save()
+        #expect(try ModelContext(container).fetch(FetchDescriptor<Release>()).first?.labelImage == Data([1, 2, 3]))
+    }
+
+    @Test func anUnversionedV2StoreMigratesToV3() throws {
+        try writeV2Store(versioned: false)
+        try expectMigratedData()
+    }
+
+    @Test func aVersionedV2StoreMigratesToV3() throws {
+        try writeV2Store(versioned: true)
+        try expectMigratedData()
     }
 
     @Test func thePlanStartsAtTheCurrentSchema() {
         #expect(VynlMigrationPlan.schemas.last == AppSchema.Current.self)
-        #expect(AppSchema.Current.versionIdentifier == Schema.Version(2, 0, 0))
+        #expect(AppSchema.Current.versionIdentifier == Schema.Version(3, 0, 0))
+        #expect(VynlMigrationPlan.stages.count == VynlMigrationPlan.schemas.count - 1)
     }
 
     @Test func aNewStoreOpensThroughThePlan() throws {

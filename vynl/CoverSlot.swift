@@ -19,6 +19,7 @@ struct CoverSlot: View {
     let title: String
     @Binding var cover: Data?
     @Binding var coverColor: String?
+    @Binding var labelImage: Data?
 
     @State private var pickerItem: PhotosPickerItem?
     @State private var showCamera = false
@@ -35,7 +36,8 @@ struct CoverSlot: View {
         HStack(alignment: .top, spacing: 16) {
             SleeveView(artist: artist.isEmpty ? "Artist" : artist,
                        title: title.isEmpty ? "Title" : title,
-                       cover: cover, coverColor: coverColor, dieCut: false, plaques: true)
+                       cover: cover, coverColor: coverColor, labelImage: labelImage,
+                       dieCut: false, plaques: true)
                 .frame(width: 120, height: 120)
                 .accessibilityIdentifier("addRelease.coverSlot")
 
@@ -58,6 +60,7 @@ struct CoverSlot: View {
                     Button("Remove cover", role: .destructive) {
                         cover = nil
                         coverColor = nil
+                        labelImage = nil
                         pickerItem = nil
                     }
                     .foregroundStyle(Palette.danger)
@@ -116,6 +119,7 @@ struct CoverSlot: View {
     private func apply(_ data: Data) {
         guard let prepared = CoverArt.prepare(data) else { return }
         cover = prepared.cover
+        labelImage = prepared.label
         coverColor = prepared.color
     }
 }

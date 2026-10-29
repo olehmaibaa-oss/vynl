@@ -134,11 +134,12 @@ struct ReleaseDetailView: View {
     /// The sleeve, 220pt, with the record slid out to its right.
     private var hero: some View {
         ZStack(alignment: .topLeading) {
-            RecordDisc(labelColor: labelColor, labelName: release.label ?? "")
+            RecordDisc(labelColor: labelColor, labelName: release.label ?? "",
+                       labelImage: release.cover == nil ? nil : release.labelImage)
                 .frame(width: 214, height: 214)
                 .offset(x: 132, y: 3)
             SleeveView(artist: release.artist, title: release.title,
-                       cover: release.cover, coverColor: release.coverColor)
+                       cover: release.cover, coverColor: release.coverColor, labelImage: release.labelImage)
                 .frame(width: 220, height: 220)
                 .accessibilityIdentifier("releaseDetail.cover")
         }

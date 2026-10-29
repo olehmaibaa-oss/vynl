@@ -102,7 +102,7 @@ public class AddReleasePage extends BasePage {
     private static final By PICKER_PHOTO = AppiumBy.iOSNsPredicateString(
             "name == 'PXGGridLayout-Info' AND label BEGINSWITH 'Photo'");
 
-    /** "placeholder" or "image": the slot's accessibility value. */
+    /** "placeholder", "image", or "image+label" (COV-1: the photo also gave the label). */
     public String coverKind() {
         return find(COVER_SLOT).getAttribute("value");
     }
@@ -127,7 +127,7 @@ public class AddReleasePage extends BasePage {
                 "x", cell.getX() + cell.getWidth() / 2,
                 "y", cell.getY() + cell.getHeight() / 2));
         new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
-                .until(d -> "image".equals(coverKind()));
+                .until(d -> coverKind().startsWith("image"));
         return this;
     }
 

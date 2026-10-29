@@ -53,12 +53,13 @@ struct RecordSheetView: View {
 
     private var hero: some View {
         ZStack(alignment: .topLeading) {
-            RecordDisc(labelColor: CoverArt.labelColor(for: release), labelName: release.label ?? "")
+            RecordDisc(labelColor: CoverArt.labelColor(for: release), labelName: release.label ?? "",
+                       labelImage: release.cover == nil ? nil : release.labelImage)
                 .frame(width: 160, height: 160)
                 .rotationEffect(.degrees(discOut ? 75 : 0))
                 .offset(x: discOut ? 104 : 4, y: 4)
             SleeveView(artist: release.artist, title: release.title,
-                       cover: release.cover, coverColor: release.coverColor)
+                       cover: release.cover, coverColor: release.coverColor, labelImage: release.labelImage)
                 .frame(width: 168, height: 168)
                 .shadow(color: .black.opacity(0.7), radius: 20, y: 20)
         }

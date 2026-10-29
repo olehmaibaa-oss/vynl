@@ -2,7 +2,7 @@
 Feature: Covers
 
   # Source AC: SCRUM-34 (DR-5). A cover is told apart from the generated
-  # placeholder by the accessibility value ("image" / "placeholder"), never by
+  # placeholder by the accessibility value ("image+label" / "placeholder"), never by
   # pixels. The library photo is the fixture fixtures/cover.jpg, added to the
   # simulator's library by the step that needs it.
 

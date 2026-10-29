@@ -31,6 +31,11 @@ final class Release {
     /// cleared when it is removed; placeholders derive theirs from their seed.
     var coverColor: String?
 
+    /// COV-1 (SCRUM-57): the record's real label, a square JPEG of the photo's
+    /// centre circle. Shown in the die-cut and on the record with our hole,
+    /// shadow and sheen on top. Nil: the generated key-colour label.
+    @Attribute(.externalStorage) var labelImage: Data?
+
     /// Set on insert, never edited. For the "recently added" sort.
     var dateAdded: Date
 
