@@ -47,26 +47,39 @@ public class TrackFormPage extends BasePage {
     }
 
     /**
-     * TRK-1: "A2"-style positions are picked as side + number chips; anything
-     * else ("AA", "12") goes through Other… and the text field.
+     * SCRUM-64: "A2"-style positions are a side tab, then a row on the number
+     * wheel. The wheel shows five rows around the picked number, so a number
+     * out of view is reached by tapping the edge row towards it. Anything else
+     * ("AA", "12") goes through Other… and the text field.
      */
     public TrackFormPage setPosition(String position) {
         if (position.matches("[A-F][1-9]")) {
             waitFor(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
                     chip(SIDE_CHIP, position.substring(0, 1)))).click();
-            waitFor(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
-                    chip(NUMBER_CHIP, position.substring(1)))).click();
+            int target = Integer.parseInt(position.substring(1));
+            for (int i = 0; i < 6; i++) {
+                java.util.List<org.openqa.selenium.WebElement> hit = driver.findElements(chip(NUMBER_CHIP, String.valueOf(target)));
+                if (!hit.isEmpty()) {
+                    hit.get(0).click();
+                    break;
+                }
+                java.util.List<Integer> shown = new java.util.ArrayList<>();
+                for (String l : labelsOf(NUMBER_CHIP)) shown.add(Integer.parseInt(l));
+                int edge = target > java.util.Collections.max(shown)
+                        ? java.util.Collections.max(shown) : java.util.Collections.min(shown);
+                driver.findElement(chip(NUMBER_CHIP, String.valueOf(edge))).click();
+            }
         } else {
             tap(OTHER_POSITION);
-            type(POSITION_FIELD, position);
+            clearAndType(POSITION_FIELD, position);
         }
         return this;
     }
 
-    /** Other… with nothing typed: the position is empty (Save stays disabled). */
+    /** Other… with the field emptied: no position (Save stays disabled). */
     public TrackFormPage clearPosition() {
         tap(OTHER_POSITION);
-        findVisible(POSITION_FIELD);
+        findVisible(POSITION_FIELD).clear();
         return this;
     }
 
