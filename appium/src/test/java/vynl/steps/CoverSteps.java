@@ -15,6 +15,7 @@ import java.net.URISyntaxException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** DR-5 (SCRUM-34): covers in the release form and on the release screen. */
 public class CoverSteps {
@@ -61,6 +62,43 @@ public class CoverSteps {
         form().fillRequired(Flows.ARTIST, Flows.TITLE, Flows.GENRE).pickNewestLibraryPhoto();
     }
 
+    @When("I fill the release, pick the newest photo and cancel the crop")
+    public void iPickAndCancelTheCrop() {
+        AddReleasePage form = form().fillRequired(Flows.ARTIST, Flows.TITLE, Flows.GENRE).openNewestLibraryPhoto();
+        assertTrue(form.isCropScreenShown(), "the crop screen didn't open");
+        form.cancelCrop();
+    }
+
+    @When("I fill the release and open the newest photo")
+    public void iFillTheReleaseAndOpenThePhoto() {
+        form().fillRequired(Flows.ARTIST, Flows.TITLE, Flows.GENRE).openNewestLibraryPhoto().waitCropReady();
+    }
+
+    @Then("the crop chip {string} is {string}")
+    public void theCropChipIs(String chip, String value) {
+        assertEquals(value, form().cropToggle(chip));
+    }
+
+    @When("I tap the crop chip {string}")
+    public void iTapTheCropChip(String chip) {
+        form().tapCropToggle(chip);
+    }
+
+    @When("I use the crop")
+    public void iUseTheCrop() {
+        form().useCrop();
+    }
+
+    @Then("the cover slot shows a cover image")
+    public void theSlotShowsACoverImage() {
+        assertEquals("image+label", form().coverKind());
+    }
+
+    @Then("the cover slot still shows the placeholder")
+    public void theSlotStillShowsThePlaceholder() {
+        assertEquals("placeholder", form().coverKind());
+    }
+
     @Given("a release with a cover exists")
     public void aReleaseWithACoverExists() {
         collection().tapAddFromEmptyState()
@@ -68,7 +106,7 @@ public class CoverSteps {
                 .pickNewestLibraryPhoto()
                 .save()
                 .openRelease(Flows.ARTIST);
-        assertEquals("image", detail().coverKind(), "setup: the cover didn't stick");
+        assertTrue(detail().coverKind().startsWith("image"), "setup: the cover didn't stick");
     }
 
     @When("I edit it, remove the cover and save")
@@ -84,7 +122,7 @@ public class CoverSteps {
 
     @Then("the release shows a cover image")
     public void theReleaseShowsACoverImage() {
-        assertEquals("image", detail().coverKind());
+        assertEquals("image+label", detail().coverKind(), "a picked photo gives the cover and the real label");
     }
 
     @Then("the release shows the placeholder")

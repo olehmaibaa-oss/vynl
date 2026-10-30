@@ -19,17 +19,23 @@ struct SleeveView: View {
     let title: String
     var cover: Data?
     var coverColor: String?
+    var labelImage: Data? = nil
     var dieCut = true
     var plaques = false
 
     var body: some View {
         GeometryReader { geo in
             let side = min(geo.size.width, geo.size.height)
-            let hole = side * 0.153
+            // A real label (COV-1) is cut at CoverArt.labelRatio of the square, so
+            // the hole opens to exactly that circle and the label sits 1:1 with
+            // the photo around it. Otherwise the drawn label, a little larger
+            // than the hole (PO, 29.10: the hole was smaller than the photo's label).
+            let realLabel = cover != nil && labelImage != nil
+            let hole = realLabel ? side * CoverArt.labelRatio / 2 : side * 0.153
             ZStack(alignment: .topLeading) {
                 if dieCut {
-                    // The label under the cut, a little larger than the hole.
-                    LabelDisc(color: labelColor, side: hole * 2.35, showsText: false)
+                    LabelDisc(color: labelColor, side: realLabel ? hole * 2 : hole * 2.35, showsText: false,
+                              image: realLabel ? labelImage : nil)
                         .frame(width: side, height: side)
                 }
                 art(side: side)
@@ -70,7 +76,8 @@ struct SleeveView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(artist), \(title)")
         // Tests tell a photo from a placeholder by value, never by pixels.
-        .accessibilityValue(cover == nil ? "placeholder" : "image")
+        // COV-1: "image+label" when the photo also gave the real label.
+        .accessibilityValue(cover == nil ? "placeholder" : (labelImage == nil ? "image" : "image+label"))
     }
 
     private var labelColor: Color {
@@ -178,12 +185,31 @@ struct LabelDisc: View {
     let side: CGFloat
     var showsText = true
     var labelName: String = ""
+    /// COV-1: the real label from the photo. Drawn clipped to the circle, with
+    /// our spindle hole, inner shadow and sheen on top for the same volume as
+    /// the generated labels. No printed text over a real label.
+    var image: Data? = nil
 
     var body: some View {
         ZStack {
-            Circle().fill(color)
+            if let image, let ui = UIImage(data: image) {
+                Image(uiImage: ui)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: side, height: side)
+                    .clipShape(Circle())
+                // Volume: a darker rim and a soft sheen, like the drawn labels.
+                Circle()
+                    .fill(RadialGradient(colors: [.clear, .clear, .black.opacity(0.28)],
+                                         center: .center, startRadius: 0, endRadius: side / 2))
+                Circle()
+                    .fill(LinearGradient(colors: [.white.opacity(0.16), .clear, .clear],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+            } else {
+                Circle().fill(color)
+            }
             Circle().fill(Palette.bg).frame(width: side * 0.08, height: side * 0.08)
-            if showsText {
+            if showsText && image == nil {
                 VStack {
                     Text(labelName.uppercased())
                         .font(.system(size: max(side * 0.082, 6), weight: .bold).monospaced())
@@ -207,6 +233,8 @@ struct LabelDisc: View {
 struct RecordDisc: View {
     let labelColor: Color
     var labelName: String = ""
+    /// COV-1: the real label from the photo, if any.
+    var labelImage: Data? = nil
 
     var body: some View {
         GeometryReader { geo in
@@ -222,7 +250,7 @@ struct RecordDisc: View {
                 Circle()
                     .fill(AngularGradient(colors: [.clear, .white.opacity(0.14), .clear, .clear, .white.opacity(0.08), .clear],
                                           center: .center))
-                LabelDisc(color: labelColor, side: s * 0.355, labelName: labelName)
+                LabelDisc(color: labelColor, side: s * 0.355, labelName: labelName, image: labelImage)
                     .rotationEffect(.degrees(75))
             }
             .frame(width: s, height: s)

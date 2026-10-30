@@ -22,11 +22,10 @@
 import Foundation
 import SwiftData
 
-/// Schema v2: DR-2 (Genre, cover, coverColor, dateAdded, Camelot key, mood
-/// groups). The first schema that holds real data. Still the live models: when
-/// v3 arrives, these become frozen nested copies (rule 1 above).
-enum SchemaV2: VersionedSchema {
-    static var versionIdentifier: Schema.Version { Schema.Version(2, 0, 0) }
+/// Schema v3: COV-1 (SCRUM-57) adds `Release.labelImage`. The live models.
+/// v2 is frozen in SchemaV2.swift.
+enum SchemaV3: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
 
     static var models: [any PersistentModel.Type] {
         [Release.self, Track.self, MoodTag.self, Genre.self]
@@ -36,21 +35,19 @@ enum SchemaV2: VersionedSchema {
 /// Every schema the app has shipped with real data, oldest first, and how to
 /// get from one to the next.
 enum VynlMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [SchemaV2.self] }
+    static var schemas: [any VersionedSchema.Type] { [SchemaV2.self, SchemaV3.self] }
 
-    /// Empty until v3. Template for the first one (E4 adds Crate/CrateItem,
-    /// new entities only, so lightweight):
-    ///
-    ///     static let v2toV3 = MigrationStage.lightweight(fromVersion: SchemaV2.self,
-    ///                                                    toVersion: SchemaV3.self)
-    static var stages: [MigrationStage] { [] }
+    /// v2 → v3: one new optional attribute (labelImage), so lightweight.
+    static let v2toV3 = MigrationStage.lightweight(fromVersion: SchemaV2.self, toVersion: SchemaV3.self)
+
+    static var stages: [MigrationStage] { [v2toV3] }
 }
 
 /// Every persisted model, in one place, so the app and the unit tests can't
 /// drift onto different schemas.
 enum AppSchema {
     /// The live versioned schema.
-    typealias Current = SchemaV2
+    typealias Current = SchemaV3
 
     /// The last schema version that resets instead of migrating (StoreReset).
     /// Frozen at 2: newer versions go through `VynlMigrationPlan`.

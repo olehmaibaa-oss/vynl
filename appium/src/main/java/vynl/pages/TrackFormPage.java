@@ -36,9 +36,52 @@ public class TrackFormPage extends BasePage {
         super(driver);
     }
 
+    private static final String SIDE_CHIP = "trackForm.sideChip";
+    private static final String NUMBER_CHIP = "trackForm.numberChip";
+    private static final String OTHER_POSITION = "trackForm.otherPositionButton";
+    private static final String POSITION_VALUE = "trackForm.positionValue";
+
+    private static org.openqa.selenium.By chip(String id, String label) {
+        return io.appium.java_client.AppiumBy.iOSNsPredicateString(
+                "name == '" + id + "' AND label == '" + label + "'");
+    }
+
+    /**
+     * SCRUM-64: "A2"-style positions are a side cell, then a number cell.
+     * Anything else ("AA", "12") goes through Other… and the text field.
+     */
     public TrackFormPage setPosition(String position) {
-        type(POSITION_FIELD, position);
+        if (position.matches("[A-F][1-9]")) {
+            waitFor(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
+                    chip(SIDE_CHIP, position.substring(0, 1)))).click();
+            waitFor(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
+                    chip(NUMBER_CHIP, position.substring(1)))).click();
+        } else {
+            tap(OTHER_POSITION);
+            clearAndType(POSITION_FIELD, position);
+        }
         return this;
+    }
+
+    /** Other… with the field emptied: no position (Save stays disabled). */
+    public TrackFormPage clearPosition() {
+        tap(OTHER_POSITION);
+        findVisible(POSITION_FIELD).clear();
+        return this;
+    }
+
+    /** The position the form will save, as shown above the chips. */
+    public String position() {
+        String label = find(POSITION_VALUE).getAttribute("label");
+        // "Position, A3" (the row's two texts combined).
+        return label.substring(label.lastIndexOf(',') + 1).trim();
+    }
+
+    /** Whether the number cell is taken on this release: marked so and disabled. */
+    public boolean isNumberTaken(String number) {
+        org.openqa.selenium.WebElement cell = waitFor(org.openqa.selenium.support.ui.ExpectedConditions
+                .presenceOfElementLocated(chip(NUMBER_CHIP, number)));
+        return "taken".equals(cell.getAttribute("value")) && !cell.isEnabled();
     }
 
     public TrackFormPage setTitle(String title) {
@@ -163,7 +206,8 @@ public class TrackFormPage extends BasePage {
 
     /** Whether the sheet is still up, after giving it the short budget to close. */
     public boolean isStillOpen() {
-        return !isGone(byId(POSITION_FIELD), Config.absenceTimeout());
+        // Not the position field: with the chips (TRK-1) it only exists after Other….
+        return !isGone(byId(TITLE_FIELD), Config.absenceTimeout());
     }
 
     public ReleaseDetailPage save() {

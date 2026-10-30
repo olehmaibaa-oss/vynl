@@ -135,6 +135,36 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   colour → the old "contrasts most with the average, ≥ 5%" rule without black/white; nothing
   usable → nil (the label falls back to the placeholder key colour). Computed when a cover is
   saved, cleared when it is removed; placeholders derive theirs from their seed and store nothing.
+- `labelImage: Data?` (COV-1, SCRUM-57, schema v3) — the record's real label: the centre circle
+  (`CoverArt.labelRatio` = 0.33 of the cover square) cut from the photo, a square JPEG ≤ 400 px,
+  external storage. `LabelDisc` draws it clipped round with our spindle hole, rim shade and sheen
+  on top (no printed text over it), in the die-cut and on `RecordDisc`. `CoverArt.prepare` keeps
+  the largest centred square as the cover (crop screens in COV-2/3 will place it), cuts the label
+  from its centre and computes `coverColor` from the label. Cleared with the cover. Sleeve value
+  "image+label" when present.
+- **Crop screen (COV-3, SCRUM-59):** a library photo (and a camera shot) opens `CoverCropView`:
+  the photo under `CropOverlay` (square frame + dashed label circle at `labelRatio`, dimmed
+  surround), drag to move, pinch to zoom (1–5×), always covering the square. Use →
+  `CropGeometry.cropRect` (image pixels) → `CoverArt.prepare(image, square:)`. Cancel (Retake for
+  the camera) changes nothing. Ids `coverCrop.view`, `coverCrop.useButton`, `coverCrop.cancelButton`.
+- **Record camera (COV-2, SCRUM-58):** `RecordCameraView` (AVFoundation, back wide camera, portrait,
+  flash auto/on/off) replaces the system picker behind Take photo. The preview is a square with
+  aspect-fill plus the dashed label circle, so it shows exactly the centred square the crop screen
+  starts from; the shot opens `CoverCropView` with Retake / Use photo. Permission flow from
+  SCRUM-40 stays. Ids `recordCamera.preview`, `.shutterButton`, `.flashButton`, `.closeButton`.
+  Manual on a device only (no camera on the simulator; Appium keeps `@no-camera`).
+- **Track position picker (TRK-1, SCRUM-60):** `PositionPicker` in the track form: side chips A–F
+  + number chips 1–9 (`trackForm.sideChip` / `trackForm.numberChip`, label = value, Selected;
+  number value "taken" when used on the release), the chosen value above them
+  (`trackForm.positionValue`), and Other… (`trackForm.otherPositionButton`) for free text in
+  `trackForm.positionField`. A new track opens with `TrackPosition.nextFree` (A1, A2 → A3). Stored
+  as before (`Track.position` text), no schema change.
+  **Redesigned (SCRUM-64, PO's pick 30.10 over the designer's number wheel):** a big readout
+  ("A3", `trackForm.positionValue` = "Position, A3") with a hint ("Next free on side A"), a bar of six
+  side cells and a bar of nine number cells (DS square cells, 1 pt `line` gaps, picked = inverted).
+  **Numbers taken on the current side are disabled** (greyed on `surface-2`, a dot, value "taken");
+  a duplicate is only possible through Other (free text, prefilled with the picked spot). The form
+  is a ScrollView of DS fields (`FieldLabel`, `fieldBlock`) on `surface`, not a grouped Form.
 - `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
 
@@ -207,7 +237,8 @@ the store any more**.
   (2) add `SchemaV<n+1>` with the live models + a stage (`.lightweight` for new optional fields /
   entities, `.custom` when data moves), (3) point `AppSchema.Current` at it, (4) add a
   `MigrationTests` case that writes a store with the old version and opens it with the plan.
-  E4 (Crate, CrateItem) is the first: a lightweight v2 → v3 (template in `VynlMigrationPlan`).
+  First stage: v2 → v3 lightweight (COV-1 `labelImage`); v2 frozen in `SchemaV2.swift`.
+  E4 (Crate, CrateItem) will be v3 → v4.
 - `StoreReset` only resets **pre-v2** stores (simulator-era builds). `AppSchema.version` is frozen
   at 2; never bump it again.
 - **Saves are explicit:** every form Save and every delete calls `modelContext.persist()`

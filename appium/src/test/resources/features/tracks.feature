@@ -49,3 +49,15 @@ Feature: Tracks
     When I swipe-delete the track "A1"
     Then the track "A1" is no longer listed
     And the track "A2" is still listed
+
+  # TRK-1 (SCRUM-60): position from side + number chips.
+  Scenario: The next free position is preselected
+    Given a release has a track "A1" / "Magneze"
+    When I start adding another track to it
+    Then the position reads "A2"
+    And number 1 is taken and can't be picked
+
+  Scenario: An odd position goes through Other
+    Given I am on a release detail screen
+    When I add a track "AA" / "Locked Groove"
+    Then I see the track "AA" / "Locked Groove" in the track list

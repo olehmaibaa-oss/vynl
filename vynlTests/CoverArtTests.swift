@@ -122,6 +122,50 @@ struct CoverArtTests {
         #expect(Set(seeds.map(CoverArt.placeholderLabelKey(seed:))).count == 24)
     }
 
+    /// A landscape "photo": grey, with a red square centred where the label sits.
+    private func landscapeRecord() -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let size = CGSize(width: 900, height: 600)
+        return UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            UIColor(white: 0.5, alpha: 1).setFill(); ctx.fill(CGRect(origin: .zero, size: size))
+            UIColor(white: 0.04, alpha: 1).setFill()
+            ctx.cgContext.fillEllipse(in: CGRect(x: 150, y: 0, width: 600, height: 600))
+            UIColor(red: 0.85, green: 0.27, blue: 0.18, alpha: 1).setFill()
+            ctx.cgContext.fillEllipse(in: CGRect(x: 350, y: 200, width: 200, height: 200))
+        }
+    }
+
+    @Test func prepareCutsTheCentredSquareAndTheLabelCircle() throws {
+        let png = try #require(landscapeRecord().pngData())
+        let prepared = try #require(CoverArt.prepare(png))
+        let cover = try #require(UIImage(data: prepared.cover))
+        let label = try #require(UIImage(data: prepared.label))
+        #expect(cover.size.width * cover.scale == 600 && cover.size.height * cover.scale == 600)
+        // 0.33 of the 600 square = 198 px, under the 400 px cap.
+        #expect(abs(label.size.width * label.scale - 198) <= 1)
+        let (r, g, b) = rgb(try #require(prepared.color))
+        #expect(r > 180 && g < 110 && b < 100, "expected the red label")
+    }
+
+    @Test func prepareHonoursAGivenSquare() throws {
+        // The square placed by a crop screen (COV-2/3): its centre becomes the label.
+        let image = landscapeRecord()
+        let prepared = try #require(CoverArt.prepare(image, square: CGRect(x: 150, y: 0, width: 600, height: 600)))
+        let (r, _, _) = rgb(try #require(prepared.color))
+        #expect(r > 180)
+        let offCentre = try #require(CoverArt.prepare(image, square: CGRect(x: 0, y: 0, width: 300, height: 300)))
+        #expect(offCentre.color == nil || rgb(offCentre.color!).0 < 180, "a square without the label must not give red")
+    }
+
+    @Test func theWorkingImageIsCappedAndKeepsItsShape() throws {
+        let big = image(base: .darkGray, accent: .orange, share: 0.3, size: 4000)
+        let data = try #require(big.jpegData(compressionQuality: 0.8))
+        let working = try #require(CoverArt.workingImage(from: data))
+        #expect(max(working.size.width, working.size.height) * working.scale <= CoverArt.workingDimension)
+        #expect(working.size.width == working.size.height)
+    }
+
     @Test func hexRoundTrips() throws {
         #expect(CoverArt.hex((1, 0.5, 0)) == "#FF8000")
         #expect(CoverArt.color(hex: "#FF8000") != nil)

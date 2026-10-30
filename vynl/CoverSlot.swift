@@ -19,10 +19,15 @@ struct CoverSlot: View {
     let title: String
     @Binding var cover: Data?
     @Binding var coverColor: String?
+    @Binding var labelImage: Data?
 
     @State private var pickerItem: PhotosPickerItem?
     @State private var showCamera = false
     @State private var showCameraDenied = false
+    /// The photo being fitted into the square (COV-3), from the library or the camera.
+    @State private var cropping: CropSource?
+    /// A camera shot waiting for the camera to close before the crop opens.
+    @State private var shot: UIImage?
 
     /// `-uitesting-noCamera` lets a UI test see the app as on a device without a
     /// camera (the iOS 26 simulator reports one).
@@ -35,7 +40,8 @@ struct CoverSlot: View {
         HStack(alignment: .top, spacing: 16) {
             SleeveView(artist: artist.isEmpty ? "Artist" : artist,
                        title: title.isEmpty ? "Title" : title,
-                       cover: cover, coverColor: coverColor, dieCut: false, plaques: true)
+                       cover: cover, coverColor: coverColor, labelImage: labelImage,
+                       dieCut: false, plaques: true)
                 .frame(width: 120, height: 120)
                 .accessibilityIdentifier("addRelease.coverSlot")
 
@@ -58,6 +64,7 @@ struct CoverSlot: View {
                     Button("Remove cover", role: .destructive) {
                         cover = nil
                         coverColor = nil
+                        labelImage = nil
                         pickerItem = nil
                     }
                     .foregroundStyle(Palette.danger)
@@ -73,16 +80,37 @@ struct CoverSlot: View {
         .onChange(of: pickerItem) { _, item in
             guard let item else { return }
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self) {
-                    apply(data)
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = await Task.detached(priority: .userInitiated, operation: {
+                       CoverArt.workingImage(from: data)
+                   }).value {
+                    cropping = CropSource(image: image, fromCamera: false)
                 }
+                // Lets the same photo be picked again after a Cancel.
+                pickerItem = nil
             }
         }
-        .fullScreenCover(isPresented: $showCamera) {
-            CameraPicker { image in
-                if let data = image.jpegData(compressionQuality: 0.9) { apply(data) }
+        .fullScreenCover(isPresented: $showCamera, onDismiss: {
+            if let image = shot {
+                shot = nil
+                cropping = CropSource(image: image, fromCamera: true)
             }
-            .ignoresSafeArea()
+        }) {
+            // COV-2: our camera with the square and the label circle.
+            RecordCameraView { image in shot = image }
+        }
+        .fullScreenCover(item: $cropping) { source in
+            CoverCropView(original: source.image,
+                          cancelTitle: source.fromCamera ? "Retake" : "Cancel",
+                          useTitle: source.fromCamera ? "Use photo" : "Use",
+                          onCancel: {
+                              cropping = nil
+                              if source.fromCamera { showCamera = true }
+                          },
+                          onUse: { image, square in
+                              apply(image, square: square)
+                              cropping = nil
+                          })
         }
         .alert("Camera access is off", isPresented: $showCameraDenied) {
             Button("Open Settings") {
@@ -113,41 +141,17 @@ struct CoverSlot: View {
         }
     }
 
-    private func apply(_ data: Data) {
-        guard let prepared = CoverArt.prepare(data) else { return }
+    private func apply(_ image: UIImage, square: CGRect) {
+        guard let prepared = CoverArt.prepare(image, square: square) else { return }
         cover = prepared.cover
+        labelImage = prepared.label
         coverColor = prepared.color
     }
 }
 
-/// The system camera. Only offered when the device has one (never on the simulator).
-struct CameraPicker: UIViewControllerRepresentable {
-    let onPick: (UIImage) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraPicker
-        init(_ parent: CameraPicker) { self.parent = parent }
-
-        func imagePickerController(_ picker: UIImagePickerController,
-                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage { parent.onPick(image) }
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
-        }
-    }
+/// A photo on its way into the crop screen.
+struct CropSource: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let fromCamera: Bool
 }

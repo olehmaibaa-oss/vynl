@@ -66,11 +66,29 @@ public class TrackSteps {
         }
     }
 
+    @When("I start adding another track to it")
+    public void iStartAddingAnotherTrack() {
+        form = detail().tapToolbarAddTrack();
+    }
+
+    @Then("the position reads {string}")
+    public void thePositionReads(String position) {
+        org.junit.jupiter.api.Assertions.assertEquals(position, form.position());
+    }
+
+    @Then("number {int} is taken and can't be picked")
+    public void numberIsTaken(int number) {
+        org.junit.jupiter.api.Assertions.assertTrue(form.isNumberTaken(String.valueOf(number)),
+                number + " is not shown as taken");
+    }
+
     @When("I fill in only the track {word} with {string}")
     public void iFillInOnlyTheTrackField(String field, String value) {
         switch (field) {
             case "position" -> form.setPosition(value);
-            case "title" -> form.setTitle(value);
+            // TRK-1: a new track opens with the next free position picked, so
+            // "only the title" means emptying the position first (Other…).
+            case "title" -> form.clearPosition().setTitle(value);
             default -> throw new IllegalArgumentException("Unknown required track field: " + field);
         }
     }

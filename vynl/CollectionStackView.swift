@@ -113,7 +113,7 @@ struct CollectionStackView: View {
         } label: {
             ZStack(alignment: .bottomLeading) {
                 SleeveView(artist: release.artist, title: release.title,
-                           cover: release.cover, coverColor: release.coverColor, plaques: true)
+                           cover: release.cover, coverColor: release.coverColor, labelImage: release.labelImage, plaques: true)
                     .matchedTransitionSource(id: release.persistentModelID, in: zoom)
                 if isCurrent {
                     Plaque(text: Self.tracksBadge(release.tracks.count).uppercased(), size: 12, weight: .bold)

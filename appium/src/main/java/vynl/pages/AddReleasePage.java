@@ -102,7 +102,7 @@ public class AddReleasePage extends BasePage {
     private static final By PICKER_PHOTO = AppiumBy.iOSNsPredicateString(
             "name == 'PXGGridLayout-Info' AND label BEGINSWITH 'Photo'");
 
-    /** "placeholder" or "image": the slot's accessibility value. */
+    /** "placeholder", "image", or "image+label" (COV-1: the photo also gave the label). */
     public String coverKind() {
         return find(COVER_SLOT).getAttribute("value");
     }
@@ -112,11 +112,25 @@ public class AddReleasePage extends BasePage {
         return find(COVER_SLOT).getAttribute("label");
     }
 
+    private static final String CROP_USE = "coverCrop.useButton";
+    private static final String CROP_CANCEL = "coverCrop.cancelButton";
+
     /**
-     * Opens the system photo picker and takes the newest photo; waits until the
-     * slot shows it. The library must hold a photo (CoverSteps adds the fixture).
+     * Opens the system photo picker, takes the newest photo and accepts the crop
+     * screen as it opens (COV-3: centred square); waits until the slot shows it.
+     * The library must hold a photo (CoverSteps adds the fixture).
      */
     public AddReleasePage pickNewestLibraryPhoto() {
+        openNewestLibraryPhoto();
+        waitCropReady();
+        tap(CROP_USE);
+        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
+                .until(d -> coverKind().startsWith("image"));
+        return this;
+    }
+
+    /** Picks the newest photo and stops on the crop screen (COV-3). */
+    public AddReleasePage openNewestLibraryPhoto() {
         tap(LIBRARY_BUTTON);
         // The picker is another process shown in ours: its cells report
         // visible=false and an element click goes nowhere. A tap at the cell's
@@ -126,8 +140,46 @@ public class AddReleasePage extends BasePage {
         driver.executeScript("mobile: tap", java.util.Map.of(
                 "x", cell.getX() + cell.getWidth() / 2,
                 "y", cell.getY() + cell.getHeight() / 2));
+        findVisible(CROP_USE);
+        return this;
+    }
+
+    /**
+     * COV-4: the crop screen cleans the photo up first and keeps Use disabled
+     * until it's done.
+     */
+    public AddReleasePage waitCropReady() {
+        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20))
+                .until(d -> isButtonEnabled(CROP_USE));
+        return this;
+    }
+
+    /** "on" / "off" of a cleanup chip: straighten, enhance, background. */
+    public String cropToggle(String name) {
+        return findVisible("coverCrop." + name + "Toggle").getAttribute("value");
+    }
+
+    public AddReleasePage tapCropToggle(String name) {
+        tap("coverCrop." + name + "Toggle");
+        waitCropReady();
+        return this;
+    }
+
+    public AddReleasePage useCrop() {
+        tap(CROP_USE);
         new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
-                .until(d -> "image".equals(coverKind()));
+                .until(d -> coverKind().startsWith("image"));
+        return this;
+    }
+
+    public boolean isCropScreenShown() {
+        return isVisible(CROP_USE);
+    }
+
+    /** Cancel on the crop screen: back to the form, nothing applied. */
+    public AddReleasePage cancelCrop() {
+        tap(CROP_CANCEL);
+        isGone(byId(CROP_USE), Config.elementTimeout());
         return this;
     }
 

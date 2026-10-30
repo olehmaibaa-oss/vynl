@@ -21,12 +21,80 @@ enum CoverArt {
 
     // MARK: - Saving a picked photo
 
-    /// Downscaled JPEG and its label colour, ready to store on the release.
-    static func prepare(_ data: Data) -> (cover: Data, color: String?)? {
+    /// Longest side of a stored label image, in pixels.
+    static let labelDimension: CGFloat = 400
+
+    /// The label's diameter as a share of the record (a 12" label is ~100 mm on
+    /// a ~302 mm record). The camera overlay and the library crop draw their
+    /// centre circle with it, so the label lands in the same place (COV-2/3).
+    static let labelRatio: CGFloat = 0.33
+
+    /// What a picked photo turns into: the cover (the square), the label (the
+    /// centre circle of that square, as a square image) and the label colour.
+    struct Prepared {
+        let cover: Data
+        let label: Data
+        let color: String?
+    }
+
+    /// From raw image data: the largest centred square (COV-1 until the crop
+    /// screens of COV-2/3 let the user place it).
+    static func prepare(_ data: Data) -> Prepared? {
         guard let image = UIImage(data: data) else { return nil }
-        let scaled = downscale(image, maxDimension: maxDimension)
-        guard let jpeg = scaled.jpegData(compressionQuality: 0.82) else { return nil }
-        return (jpeg, coverColor(of: scaled).map(hex))
+        return prepare(image, square: nil)
+    }
+
+    /// From an image and the square to keep, in the image's pixel coordinates
+    /// (nil: the largest centred square). The label is the centre circle of that
+    /// square, `labelRatio` of its side; its colour is computed from the label.
+    static func prepare(_ image: UIImage, square: CGRect?) -> Prepared? {
+        let upright = normalized(image)
+        guard let cg = upright.cgImage else { return nil }
+        let full = CGRect(x: 0, y: 0, width: cg.width, height: cg.height)
+        let rect = (square ?? centredSquare(in: full.size)).integral.intersection(full)
+        guard rect.width > 0, rect.height > 0, let squareCG = cg.cropping(to: rect) else { return nil }
+        let squareImage = UIImage(cgImage: squareCG)
+        let labelSide = rect.width * labelRatio
+        let labelRect = CGRect(x: (rect.width - labelSide) / 2, y: (rect.height - labelSide) / 2,
+                               width: labelSide, height: labelSide).integral
+        guard let labelCG = squareCG.cropping(to: labelRect) else { return nil }
+        let labelImage = downscale(UIImage(cgImage: labelCG), maxDimension: labelDimension)
+        guard let cover = downscale(squareImage, maxDimension: maxDimension).jpegData(compressionQuality: 0.82),
+              let label = labelImage.jpegData(compressionQuality: 0.85) else { return nil }
+        return Prepared(cover: cover, label: label, color: coverColor(of: labelImage).map(hex))
+    }
+
+    /// Longest side of the image the crop screen works on: enough for the
+    /// 1200 px cover from a zoomed-in square, light enough to drag at 60 fps.
+    static let workingDimension: CGFloat = 2400
+
+    /// Decode, draw upright and scale down in one pass. Call off the main thread:
+    /// a full camera or library photo takes a moment.
+    nonisolated static func workingImage(from data: Data) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: workingDimension,
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: cg)
+    }
+
+    static func centredSquare(in size: CGSize) -> CGRect {
+        let side = min(size.width, size.height)
+        return CGRect(x: (size.width - side) / 2, y: (size.height - side) / 2, width: side, height: side)
+    }
+
+    /// Camera photos carry an orientation flag; cropping works on raw pixels, so
+    /// draw them upright first.
+    static func normalized(_ image: UIImage) -> UIImage {
+        guard image.imageOrientation != .up else { return image }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        return UIGraphicsImageRenderer(size: image.size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: image.size))
+        }
     }
 
     static func downscale(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
