@@ -76,7 +76,7 @@ public class TrackSteps {
         org.junit.jupiter.api.Assertions.assertEquals(position, form.position());
     }
 
-    @Then("number {int} is marked as taken")
+    @Then("number {int} is taken and can't be picked")
     public void numberIsTaken(int number) {
         org.junit.jupiter.api.Assertions.assertTrue(form.isNumberTaken(String.valueOf(number)),
                 number + " is not shown as taken");

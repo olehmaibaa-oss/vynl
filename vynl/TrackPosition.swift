@@ -35,51 +35,61 @@ enum TrackPosition {
 }
 
 
-/// SCRUM-64, the designer's "Track form: side tabs + number wheel" boards:
-/// side tabs A–F with a track count, a five-row number wheel around the
-/// picked number showing which track holds each spot, a caption, and Other…
-/// for free text. Taken spots stay pickable (duplicates were always allowed).
+/// SCRUM-64, PO's pick (30.10, "option A" over the designer's wheel): a big
+/// readout of the position, a bar of sides A–F and a bar of numbers 1–9.
+/// Numbers already used on this side can't be picked (greyed, with a dot);
+/// duplicates only through Other…, which takes free text.
 struct PositionPicker: View {
     @Binding var position: String
     /// Position → title of the track already there (the edited track left out).
     let tracks: [String: String]
-    /// The track title being typed, shown on the picked row.
-    let title: String
-    /// The edited track's own position ("Current position."), nil when adding.
+    /// The edited track's own position, nil when adding.
     let editing: String?
 
     @State private var other = false
-    @State private var dragSteps = 0
     @FocusState private var otherFocused: Bool
 
     private var parsed: (side: String, number: Int)? { TrackPosition.parse(position) }
     private var side: String { parsed?.side ?? "A" }
-    private var number: Int { parsed?.number ?? 1 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 FieldLabel("Position")
-                    .accessibilityLabel("Position, \(position.isEmpty ? "—" : position)")
-                    .accessibilityIdentifier("trackForm.positionValue")
                 Spacer()
-                Button(other ? "Use picker" : "Other…") { toggleOther() }
-                    .font(.system(size: 15, weight: .semibold))
+                Button(other ? "Use picker" : "Other") { toggleOther() }
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .tracking(0.5)
+                    .underline()
                     .foregroundStyle(Palette.inkMuted)
                     .frame(minHeight: 44)
                     .accessibilityIdentifier("trackForm.otherPositionButton")
             }
-            .frame(height: 28)
+            .frame(height: 20)
 
             if other {
                 otherField
             } else {
-                sideTabs
-                wheel
-                Text(caption.text)
-                    .font(.system(size: 13))
-                    .foregroundStyle(caption.strong ? Palette.inkMuted : Palette.inkDim)
-                    .accessibilityIdentifier("trackForm.positionCaption")
+                HStack(alignment: .center, spacing: 14) {
+                    Text(position.isEmpty ? "—" : position)
+                        .font(.system(size: 34, weight: .black))
+                        .monospacedDigit()
+                        .frame(minWidth: 64, alignment: .leading)
+                    Text(hint)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Palette.inkMuted)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Position, \(position.isEmpty ? "—" : position)")
+                .accessibilityIdentifier("trackForm.positionValue")
+
+                bar(TrackPosition.sides, id: "trackForm.sideChip",
+                    state: { s in (parsed?.side == s, false) },
+                    pick: { s in position = "\(s)\(nextFree(on: s))" })
+
+                bar(TrackPosition.numbers.map(String.init), id: "trackForm.numberChip",
+                    state: { n in (parsed?.number == Int(n), isTaken("\(side)\(n)")) },
+                    pick: { n in position = "\(side)\(n)" })
             }
         }
         .onAppear {
@@ -88,124 +98,52 @@ struct PositionPicker: View {
         }
     }
 
-    // MARK: - Sides
-
-    private var sideTabs: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(TrackPosition.sides.enumerated()), id: \.element) { i, s in
-                let on = s == side
-                let count = tracks.keys.filter { TrackPosition.parse($0)?.side == s }.count
-                Button {
-                    position = "\(s)\(nextFree(on: s))"
-                } label: {
-                    Text(s)
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .overlay(alignment: .topTrailing) {
-                            if count > 0 {
-                                Text("\(count)")
-                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(on ? Palette.onInvertMuted : Palette.inkDim)
-                                    .padding(.top, 4).padding(.trailing, 6)
-                            }
-                        }
-                        .foregroundStyle(on ? Palette.onInvert : Palette.ink)
-                        .background(on ? Palette.invert : Color.clear)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .overlay(alignment: .leading) {
-                    if i > 0 { Rectangle().fill(Palette.line).frame(width: 1) }
-                }
-                .accessibilityLabel(s)
-                .accessibilityValue(count == 0 ? "" : count == 1 ? "1 track" : "\(count) tracks")
-                .accessibilityAddTraits(on ? .isSelected : [])
-                .accessibilityIdentifier("trackForm.sideChip")
-            }
-        }
-        .overlay(Rectangle().strokeBorder(Palette.line, lineWidth: 1))
-    }
+    private func isTaken(_ id: String) -> Bool { id != editing && tracks[id] != nil }
 
     /// The first free number on a side, 1 if the side is full.
     private func nextFree(on s: String) -> Int {
-        (1...9).first { tracks["\(s)\($0)"] == nil } ?? 1
+        (1...9).first { !isTaken("\(s)\($0)") } ?? 1
     }
 
-    // MARK: - Number wheel
+    private var hint: String {
+        guard let p = parsed else { return "" }
+        if "\(p.side)\(p.number)" == editing { return "Current position" }
+        if p.number == nextFree(on: p.side) { return "Next free on side \(p.side)" }
+        return "Free spot"
+    }
 
-    private var wheel: some View {
-        VStack(spacing: 0) {
-            ForEach(-2...2, id: \.self) { d in
-                row(number + d, distance: abs(d))
+    /// A row of equal square cells with 1 pt `line` gaps; the picked cell
+    /// inverts, a taken one is greyed on `surface-2` with a dot and disabled.
+    private func bar(_ items: [String], id: String,
+                     state: @escaping (String) -> (on: Bool, taken: Bool),
+                     pick: @escaping (String) -> Void) -> some View {
+        HStack(spacing: 1) {
+            ForEach(items, id: \.self) { item in
+                let st = state(item)
+                Button { pick(item) } label: {
+                    Text(item)
+                        .font(.system(size: 15, weight: .bold))
+                        .monospacedDigit()
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .foregroundStyle(st.on ? Palette.onInvert : st.taken ? Palette.inkDim.opacity(0.55) : Palette.ink)
+                        .background(st.on ? Palette.invert : st.taken ? Palette.surface2 : Palette.bg)
+                        .overlay(alignment: .bottom) {
+                            if st.taken {
+                                Rectangle().fill(Palette.inkDim).frame(width: 4, height: 4).padding(.bottom, 4)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(st.taken)
+                .accessibilityLabel(item)
+                .accessibilityValue(st.taken ? "taken" : "")
+                .accessibilityAddTraits(st.on ? .isSelected : [])
+                .accessibilityIdentifier(id)
             }
         }
-        .background(Palette.surface2)
-        .contentShape(Rectangle())
-        // Drag to turn the wheel, one row per 36 pt.
-        .gesture(
-            DragGesture(minimumDistance: 8)
-                .onChanged { v in
-                    let steps = Int((-v.translation.height / 36).rounded())
-                    if steps != dragSteps {
-                        let n = min(max(number + steps - dragSteps, 1), 9)
-                        dragSteps = steps
-                        position = "\(side)\(n)"
-                    }
-                }
-                .onEnded { _ in dragSteps = 0 }
-        )
-    }
-
-    @ViewBuilder
-    private func row(_ n: Int, distance: Int) -> some View {
-        if (1...9).contains(n) {
-            let id = "\(side)\(n)"
-            let owner = id == editing ? nil : tracks[id]
-            let on = distance == 0
-            let shownTitle = owner ?? (on ? (title.trimmingCharacters(in: .whitespaces).isEmpty ? "New track" : title) : "")
-            Button {
-                position = id
-            } label: {
-                HStack(spacing: 10) {
-                    Text("\(n)")
-                        .font(.system(size: 15, weight: .bold, design: .monospaced))
-                        .frame(width: 28, alignment: .leading)
-                    Text(shownTitle)
-                        .font(.system(size: 15, weight: on ? .bold : .medium))
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    if on {
-                        Text(owner != nil ? "TAKEN · \(id)" : id)
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .tracking(0.5)
-                    }
-                }
-                .padding(.horizontal, 12)
-                .frame(height: 36)
-                .foregroundStyle(on ? Palette.onInvert : owner != nil ? Palette.inkDim : Palette.ink)
-                .background(on ? Palette.invert : Color.clear)
-                .opacity(distance == 0 ? 1 : distance == 1 ? 0.8 : 0.45)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(n)")
-            .accessibilityValue(owner != nil ? "taken" : "")
-            .accessibilityHint(owner.map { "\(id), \($0)" } ?? "\(id), free")
-            .accessibilityAddTraits(on ? .isSelected : [])
-            .accessibilityIdentifier("trackForm.numberChip")
-        } else {
-            Color.clear.frame(height: 36).accessibilityHidden(true)
-        }
-    }
-
-    private var caption: (text: String, strong: Bool) {
-        let id = "\(side)\(number)"
-        if let owner = tracks[id], id != editing {
-            return ("\(id) already holds \(owner). Saving puts both tracks there.", true)
-        }
-        if id == editing { return ("Current position.", false) }
-        if number == nextFree(on: side) { return ("Next free spot on side \(side).", false) }
-        return ("Free spot.", false)
+        .padding(1)
+        .background(Palette.line)
     }
 
     // MARK: - Other…
@@ -233,11 +171,10 @@ struct PositionPicker: View {
     private func toggleOther() {
         if other {
             other = false
-            if parsed == nil {
+            if parsed == nil || isTaken(position.uppercased()) {
                 position = TrackPosition.nextFree(after: Array(tracks.keys))
             }
         } else {
-            // The designer's Other… starts from the picked spot, ready to edit.
             other = true
             otherFocused = true
         }

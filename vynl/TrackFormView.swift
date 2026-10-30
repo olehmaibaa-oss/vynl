@@ -67,7 +67,7 @@ struct TrackFormView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     PositionPicker(position: $position, tracks: otherTracks,
-                                   title: title, editing: editingPosition)
+                                   editing: editingPosition)
 
                     VStack(alignment: .leading, spacing: 8) {
                         FieldLabel("Title")

@@ -47,28 +47,15 @@ public class TrackFormPage extends BasePage {
     }
 
     /**
-     * SCRUM-64: "A2"-style positions are a side tab, then a row on the number
-     * wheel. The wheel shows five rows around the picked number, so a number
-     * out of view is reached by tapping the edge row towards it. Anything else
-     * ("AA", "12") goes through Other… and the text field.
+     * SCRUM-64: "A2"-style positions are a side cell, then a number cell.
+     * Anything else ("AA", "12") goes through Other… and the text field.
      */
     public TrackFormPage setPosition(String position) {
         if (position.matches("[A-F][1-9]")) {
             waitFor(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
                     chip(SIDE_CHIP, position.substring(0, 1)))).click();
-            int target = Integer.parseInt(position.substring(1));
-            for (int i = 0; i < 6; i++) {
-                java.util.List<org.openqa.selenium.WebElement> hit = driver.findElements(chip(NUMBER_CHIP, String.valueOf(target)));
-                if (!hit.isEmpty()) {
-                    hit.get(0).click();
-                    break;
-                }
-                java.util.List<Integer> shown = new java.util.ArrayList<>();
-                for (String l : labelsOf(NUMBER_CHIP)) shown.add(Integer.parseInt(l));
-                int edge = target > java.util.Collections.max(shown)
-                        ? java.util.Collections.max(shown) : java.util.Collections.min(shown);
-                driver.findElement(chip(NUMBER_CHIP, String.valueOf(edge))).click();
-            }
+            waitFor(org.openqa.selenium.support.ui.ExpectedConditions.elementToBeClickable(
+                    chip(NUMBER_CHIP, position.substring(1)))).click();
         } else {
             tap(OTHER_POSITION);
             clearAndType(POSITION_FIELD, position);
@@ -90,10 +77,11 @@ public class TrackFormPage extends BasePage {
         return label.substring(label.lastIndexOf(',') + 1).trim();
     }
 
-    /** Whether the number chip is marked as taken on this release. */
+    /** Whether the number cell is taken on this release: marked so and disabled. */
     public boolean isNumberTaken(String number) {
-        return "taken".equals(waitFor(org.openqa.selenium.support.ui.ExpectedConditions
-                .presenceOfElementLocated(chip(NUMBER_CHIP, number))).getAttribute("value"));
+        org.openqa.selenium.WebElement cell = waitFor(org.openqa.selenium.support.ui.ExpectedConditions
+                .presenceOfElementLocated(chip(NUMBER_CHIP, number)));
+        return "taken".equals(cell.getAttribute("value")) && !cell.isEnabled();
     }
 
     public TrackFormPage setTitle(String title) {

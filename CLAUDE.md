@@ -159,13 +159,12 @@ Genre. The UI still shows v1 screens; the stories after DR-2 bring the UI for ea
   (`trackForm.positionValue`), and Other… (`trackForm.otherPositionButton`) for free text in
   `trackForm.positionField`. A new track opens with `TrackPosition.nextFree` (A1, A2 → A3). Stored
   as before (`Track.position` text), no schema change.
-  **Redesigned (SCRUM-64)** to the designer's boards ("Track form: side tabs + number wheel" in the
-  Claude Design canvas): side tabs with a track count (value "2 tracks"), a five-row number wheel
-  around the picked number (tap a row or drag; rows show the title already there; value "taken"),
-  a caption ("Next free spot on side A." / "A1 already holds …"), Other… prefilled with the picked
-  spot. `trackForm.positionValue` is the POSITION label ("Position, A3"). Only five numbers are on
-  screen: Appium `setPosition` taps the edge row towards the target until it shows. The form is a
-  ScrollView of DS fields (`FieldLabel`, `fieldBlock`) on `surface`, not a grouped Form.
+  **Redesigned (SCRUM-64, PO's pick 30.10 over the designer's number wheel):** a big readout
+  ("A3", `trackForm.positionValue` = "Position, A3") with a hint ("Next free on side A"), a bar of six
+  side cells and a bar of nine number cells (DS square cells, 1 pt `line` gaps, picked = inverted).
+  **Numbers taken on the current side are disabled** (greyed on `surface-2`, a dot, value "taken");
+  a duplicate is only possible through Other (free text, prefilled with the picked spot). The form
+  is a ScrollView of DS fields (`FieldLabel`, `fieldBlock`) on `surface`, not a grouped Form.
 - `dateAdded: Date` — set in init (`.now`), never edited. For "recently added" sort.
 - one-to-many to Track, **cascade delete**
 

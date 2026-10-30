@@ -55,7 +55,7 @@ Feature: Tracks
     Given a release has a track "A1" / "Magneze"
     When I start adding another track to it
     Then the position reads "A2"
-    And number 1 is marked as taken
+    And number 1 is taken and can't be picked
 
   Scenario: An odd position goes through Other
     Given I am on a release detail screen
